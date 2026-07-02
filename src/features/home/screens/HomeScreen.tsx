@@ -6,12 +6,14 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
+import homepageImg from "../../../assets/images/homepage.png";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
@@ -138,6 +140,11 @@ export function HomeScreen() {
             Inspiring books, audiobooks, and timeless wisdom curated for
             lifelong learners.
           </Text>
+          <Image
+            source={homepageImg}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
         </View>
 
         <View style={styles.searchContainer}>
@@ -304,6 +311,12 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: "rgba(255,255,255,0.8)",
     lineHeight: 24,
+  },
+  heroImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    marginTop: Spacing.md,
   },
   searchContainer: {
     flexDirection: "row",

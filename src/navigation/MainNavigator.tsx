@@ -2,9 +2,12 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
-import { View, Text, StyleSheet } from "react-native";
 import { HomeScreen } from "@/features/home/screens/HomeScreen";
 import { BookDetailScreen } from "@/features/home/screens/BookDetailScreen";
+import { CartScreen } from "@/features/cart/screens/CartScreen";
+import { CategoriesScreen } from "@/features/categories/screens/CategoriesScreen";
+import { WishlistScreen } from "@/features/wishlist/screens/WishlistScreen";
+import { ProfileScreen } from "@/features/profile/screens/ProfileScreen";
 
 export type HomeStackParamList = {
   HomeScreen: undefined;
@@ -33,30 +36,6 @@ const CartStack = createNativeStackNavigator();
 const ExploreStack = createNativeStackNavigator();
 const FavoritesStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
-
-function PlaceholderScreen({ title }: { title: string }) {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>{title}</Text>
-    </View>
-  );
-}
-
-function CartScreen() {
-  return <PlaceholderScreen title="Cart" />;
-}
-
-function ExploreScreen() {
-  return <PlaceholderScreen title="Explore" />;
-}
-
-function FavoritesScreen() {
-  return <PlaceholderScreen title="Favorites" />;
-}
-
-function ProfileScreen() {
-  return <PlaceholderScreen title="Profile" />;
-}
 
 function HomeNavigator() {
   return (
@@ -91,8 +70,8 @@ function ExploreNavigator() {
   return (
     <ExploreStack.Navigator>
       <ExploreStack.Screen
-        name="ExploreScreen"
-        component={ExploreScreen}
+        name="CategoriesScreen"
+        component={CategoriesScreen}
         options={{ headerShown: false }}
       />
     </ExploreStack.Navigator>
@@ -103,8 +82,8 @@ function FavoritesNavigator() {
   return (
     <FavoritesStack.Navigator>
       <FavoritesStack.Screen
-        name="FavoritesScreen"
-        component={FavoritesScreen}
+        name="WishlistScreen"
+        component={WishlistScreen}
         options={{ headerShown: false }}
       />
     </FavoritesStack.Navigator>
@@ -184,12 +163,12 @@ export function MainNavigator() {
       <Tab.Screen
         name="Explore"
         component={ExploreNavigator}
-        options={{ tabBarLabel: "Explore" }}
+        options={{ tabBarLabel: "Category" }}
       />
       <Tab.Screen
         name="Favorites"
         component={FavoritesNavigator}
-        options={{ tabBarLabel: "Favorites" }}
+        options={{ tabBarLabel: "Wishlist" }}
       />
       <Tab.Screen
         name="Profile"
@@ -199,16 +178,3 @@ export function MainNavigator() {
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.white,
-  },
-  placeholderText: {
-    fontSize: 24,
-    color: Colors.gray[500],
-  },
-});
