@@ -33,4 +33,13 @@ export const authApi = {
     api.post<AuthResponse>("/auth/refresh", { refreshToken }),
 
   getProfile: () => api.get("/auth/profile"),
+
+  forgotPassword: (payload: { email: string }) =>
+    api.post("/auth/forgot-password", payload),
+
+  resetPassword: (payload: { email: string; password: string; code: string }) =>
+    api.post("/auth/reset-password", payload),
+
+  verifyOtp: (payload: { email: string; code: string }) =>
+    api.post("/auth/verify-otp", payload),
 };

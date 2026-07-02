@@ -4,8 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
-import { loginSchema, LoginFormData } from "../validation";
-import { useLogin } from "../hooks/useLogin";
+import { forgotPasswordSchema, ForgotPasswordFormData } from "../validation";
 import { AuthLayout } from "../components/AuthLayout";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
@@ -13,27 +12,31 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useNavigation } from "@react-navigation/native";
 
-type LoginNav = NativeStackNavigationProp<AuthStackParamList, "Login">;
+type ForgotPasswordNav = NativeStackNavigationProp<
+  AuthStackParamList,
+  "ForgotPassword"
+>;
 
-export function LoginScreen() {
-  const navigation = useNavigation<LoginNav>();
+export function ForgotPasswordScreen() {
+  const navigation = useNavigation<ForgotPasswordNav>();
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const loginMutation = useLogin();
-
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onSubmit = (data: ForgotPasswordFormData) => {
+    navigation.navigate("OtpVerification", { email: data.email });
   };
 
   return (
     <AuthLayout>
-      <Text style={styles.title}>Welcome to{"\n"}W.E Books</Text>
+      <Text style={styles.title}>Forgot Password?</Text>
+      <Text style={styles.subtitle}>
+        Enter your email to receive a password reset link.
+      </Text>
 
       <View style={styles.form}>
         <Controller
@@ -51,32 +54,7 @@ export function LoginScreen() {
           )}
         />
 
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { onChange, value } }) => (
-            <AuthInput
-              placeholder="Enter your password"
-              value={value}
-              onChangeText={onChange}
-              error={errors.password?.message}
-              secureTextEntry
-            />
-          )}
-        />
-
-        <AuthButton
-          label="Sign In"
-          onPress={handleSubmit(onSubmit)}
-          loading={loginMutation.isPending}
-        />
-
-        <TouchableOpacity
-          style={styles.forgotPassword}
-          onPress={() => navigation.navigate("ForgotPassword")}
-        >
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        <AuthButton label="Send Code" onPress={handleSubmit(onSubmit)} />
       </View>
 
       <View style={styles.footer}>
@@ -94,19 +72,18 @@ const styles = StyleSheet.create({
     ...Typography.h1,
     color: Colors.black,
     textAlign: "center",
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    ...Typography.body,
+    color: Colors.gray[500],
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.sm,
   },
   form: {
     width: "100%",
-  },
-  forgotPassword: {
-    alignItems: "center",
-    marginTop: Spacing.md,
-  },
-  forgotPasswordText: {
-    ...Typography.bodySmall,
-    color: Colors.secondary,
-    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",

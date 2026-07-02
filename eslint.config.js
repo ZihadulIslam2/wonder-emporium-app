@@ -17,6 +17,9 @@ module.exports = [
       globals: {
         process: "readonly",
         console: "readonly",
+        require: "readonly",
+        module: "readonly",
+        __dirname: "readonly",
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },

@@ -4,8 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
-import { loginSchema, LoginFormData } from "../validation";
-import { useLogin } from "../hooks/useLogin";
+import { registerSchema, RegisterFormData } from "../validation";
 import { AuthLayout } from "../components/AuthLayout";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
@@ -13,29 +12,44 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useNavigation } from "@react-navigation/native";
 
-type LoginNav = NativeStackNavigationProp<AuthStackParamList, "Login">;
+type SignupNav = NativeStackNavigationProp<AuthStackParamList, "Signup">;
 
-export function LoginScreen() {
-  const navigation = useNavigation<LoginNav>();
+export function SignupScreen() {
+  const navigation = useNavigation<SignupNav>();
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
   });
 
-  const loginMutation = useLogin();
-
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onSubmit = (data: RegisterFormData) => {
+    console.log("Register:", data);
   };
 
   return (
     <AuthLayout>
-      <Text style={styles.title}>Welcome to{"\n"}W.E Books</Text>
+      <Text style={styles.title}>Create Your Account</Text>
+      <Text style={styles.subtitle}>
+        Sign up to explore books, audiobooks, and personalized content.
+      </Text>
 
       <View style={styles.form}>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <AuthInput
+              placeholder="Full Name"
+              value={value}
+              onChangeText={onChange}
+              error={errors.name?.message}
+              autoCapitalize="words"
+            />
+          )}
+        />
+
         <Controller
           control={control}
           name="email"
@@ -56,7 +70,7 @@ export function LoginScreen() {
           name="password"
           render={({ field: { onChange, value } }) => (
             <AuthInput
-              placeholder="Enter your password"
+              placeholder="Password"
               value={value}
               onChangeText={onChange}
               error={errors.password?.message}
@@ -65,24 +79,27 @@ export function LoginScreen() {
           )}
         />
 
-        <AuthButton
-          label="Sign In"
-          onPress={handleSubmit(onSubmit)}
-          loading={loginMutation.isPending}
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onChange, value } }) => (
+            <AuthInput
+              placeholder="Confirm password"
+              value={value}
+              onChangeText={onChange}
+              error={errors.confirmPassword?.message}
+              secureTextEntry
+            />
+          )}
         />
 
-        <TouchableOpacity
-          style={styles.forgotPassword}
-          onPress={() => navigation.navigate("ForgotPassword")}
-        >
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        <AuthButton label="Create Account" onPress={handleSubmit(onSubmit)} />
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Don't have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-          <Text style={styles.footerLink}>Register Now</Text>
+        <Text style={styles.footerText}>Already have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.footerLink}>Log in now</Text>
         </TouchableOpacity>
       </View>
     </AuthLayout>
@@ -94,19 +111,18 @@ const styles = StyleSheet.create({
     ...Typography.h1,
     color: Colors.black,
     textAlign: "center",
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    ...Typography.body,
+    color: Colors.gray[500],
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.sm,
   },
   form: {
     width: "100%",
-  },
-  forgotPassword: {
-    alignItems: "center",
-    marginTop: Spacing.md,
-  },
-  forgotPasswordText: {
-    ...Typography.bodySmall,
-    color: Colors.secondary,
-    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",
