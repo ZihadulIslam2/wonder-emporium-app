@@ -5,7 +5,7 @@ import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
 import { loginSchema, LoginFormData } from "../validation";
-import { useLogin } from "../hooks/useLogin";
+import { useAuthStore } from "@/store";
 import { AuthLayout } from "../components/AuthLayout";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
@@ -17,6 +17,7 @@ type LoginNav = NativeStackNavigationProp<AuthStackParamList, "Login">;
 
 export function LoginScreen() {
   const navigation = useNavigation<LoginNav>();
+  const setUser = useAuthStore((state) => state.setUser);
   const {
     control,
     handleSubmit,
@@ -25,10 +26,8 @@ export function LoginScreen() {
     resolver: zodResolver(loginSchema),
   });
 
-  const loginMutation = useLogin();
-
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onSubmit = () => {
+    setUser({ id: "1", email: "demo@webooks.com", name: "Demo User" });
   };
 
   return (
@@ -65,11 +64,7 @@ export function LoginScreen() {
           )}
         />
 
-        <AuthButton
-          label="Sign In"
-          onPress={handleSubmit(onSubmit)}
-          loading={loginMutation.isPending}
-        />
+        <AuthButton label="Sign In" onPress={handleSubmit(onSubmit)} />
 
         <TouchableOpacity
           style={styles.forgotPassword}
