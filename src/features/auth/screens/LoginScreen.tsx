@@ -1,23 +1,25 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
 import { loginSchema, LoginFormData } from "../validation";
-import { useAuthStore } from "@/store";
 import { AuthLayout } from "../components/AuthLayout";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useNavigation } from "@react-navigation/native";
+import { useLogin } from "../hooks/useLogin";
+import { useEffect } from "react";
 
 type LoginNav = NativeStackNavigationProp<AuthStackParamList, "Login">;
 
 export function LoginScreen() {
   const navigation = useNavigation<LoginNav>();
-  const setUser = useAuthStore((state) => state.setUser);
+  const loginMutation = useLogin();
+
   const {
     control,
     handleSubmit,
@@ -26,9 +28,18 @@ export function LoginScreen() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = () => {
-    setUser({ id: "1", email: "demo@webooks.com", name: "Demo User" });
+  const onSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data);
   };
+
+  useEffect(() => {
+    if (loginMutation.isError) {
+      const message =
+        (loginMutation.error as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message || "Login failed. Please try again.";
+      Alert.alert("Error", message);
+    }
+  }, [loginMutation.isError]);
 
   return (
     <AuthLayout>
@@ -64,7 +75,11 @@ export function LoginScreen() {
           )}
         />
 
-        <AuthButton label="Sign In" onPress={handleSubmit(onSubmit)} />
+        <AuthButton
+          label="Sign In"
+          onPress={handleSubmit(onSubmit)}
+          loading={loginMutation.isPending}
+        />
 
         <TouchableOpacity
           style={styles.forgotPassword}

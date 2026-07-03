@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -13,15 +14,39 @@ import { AuthLayout } from "../components/AuthLayout";
 import { AuthButton } from "../components/AuthButton";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
+import { useVerifyEmail } from "../hooks/useVerifyEmail";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "OtpVerification">;
 
 const OTP_LENGTH = 4;
 
 export function OtpVerificationScreen({ route, navigation }: Props) {
-  const { email } = route.params;
+  const { email, mode } = route.params;
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const verifyEmailMutation = useVerifyEmail();
+
+  const isVerifyEmail = mode === "verifyEmail";
+
+  useEffect(() => {
+    if (verifyEmailMutation.isSuccess) {
+      Alert.alert("Success", "Email verified successfully!", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+    }
+  }, [verifyEmailMutation.isSuccess]);
+
+  useEffect(() => {
+    if (verifyEmailMutation.isError) {
+      const message =
+        (
+          verifyEmailMutation.error as {
+            response?: { data?: { message?: string } };
+          }
+        )?.response?.data?.message || "Verification failed. Please try again.";
+      Alert.alert("Error", message);
+    }
+  }, [verifyEmailMutation.isError]);
 
   const handleChange = (text: string, index: number) => {
     const digit = text.replace(/[^0-9]/g, "");
@@ -45,7 +70,12 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
   const handleVerify = () => {
     const code = otp.join("");
     if (code.length !== OTP_LENGTH) return;
-    navigation.navigate("CreateNewPassword", { email, code });
+
+    if (isVerifyEmail) {
+      verifyEmailMutation.mutate({ email, code });
+    } else {
+      navigation.navigate("CreateNewPassword", { email, code });
+    }
   };
 
   const isComplete = otp.every((d) => d !== "");
@@ -54,7 +84,7 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
     <AuthLayout>
       <Text style={styles.title}>Verify Your Account</Text>
       <Text style={styles.subtitle}>
-        Enter the verification code sent to your email or phone.
+        Enter the verification code sent to your email.
       </Text>
 
       <View style={styles.otpContainer}>
@@ -83,11 +113,14 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
         label="Verify"
         onPress={handleVerify}
         disabled={!isComplete}
+        loading={verifyEmailMutation.isPending}
       />
 
-      <TouchableOpacity style={styles.resend} onPress={() => {}}>
-        <Text style={styles.resendText}>Resend Code</Text>
-      </TouchableOpacity>
+      {isVerifyEmail && (
+        <TouchableOpacity style={styles.resend} onPress={() => {}}>
+          <Text style={styles.resendText}>Resend Code</Text>
+        </TouchableOpacity>
+      )}
     </AuthLayout>
   );
 }

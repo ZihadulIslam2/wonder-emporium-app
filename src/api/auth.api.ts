@@ -1,45 +1,44 @@
 import { api } from "./axios";
-
-interface LoginDto {
-  email: string;
-  password: string;
-}
-
-interface RegisterDto {
-  email: string;
-  password: string;
-  name: string;
-}
-
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
+import type {
+  RegisterDto,
+  LoginDto,
+  VerifyEmailDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  RefreshTokenDto,
+  LogoutDto,
+  SocialAuthDto,
+} from "@/features/auth/types";
 
 export const authApi = {
-  login: (payload: LoginDto) => api.post<AuthResponse>("/auth/login", payload),
+  register: (payload: RegisterDto) => api.post("/auth", payload),
 
-  register: (payload: RegisterDto) =>
-    api.post<AuthResponse>("/auth/register", payload),
+  verifyEmail: (payload: VerifyEmailDto) =>
+    api.post("/auth/verify-email", payload),
 
-  logout: () => api.post("/auth/logout"),
+  login: (payload: LoginDto) => api.post("/auth/login", payload),
 
-  refreshToken: (refreshToken: string) =>
-    api.post<AuthResponse>("/auth/refresh", { refreshToken }),
+  refreshToken: (payload: RefreshTokenDto) =>
+    api.post("/auth/refresh-token", payload),
+
+  logout: (payload: LogoutDto) => api.post("/auth/logout", payload),
+
+  logoutAll: (payload: { userId: string }) =>
+    api.post("/auth/logout-all", payload),
+
+  forgotPassword: (payload: ForgotPasswordDto) =>
+    api.post("/auth/forgot-password", payload),
+
+  resetPassword: (payload: ResetPasswordDto) =>
+    api.post("/auth/reset-password", payload),
 
   getProfile: () => api.get("/auth/profile"),
 
-  forgotPassword: (payload: { email: string }) =>
-    api.post("/auth/forgot-password", payload),
+  getGoogleAuthUrl: () => api.get("/auth/google"),
 
-  resetPassword: (payload: { email: string; password: string; code: string }) =>
-    api.post("/auth/reset-password", payload),
+  googleCallbackPost: (payload: SocialAuthDto) =>
+    api.post("/auth/google/callback", payload),
 
-  verifyOtp: (payload: { email: string; code: string }) =>
-    api.post("/auth/verify-otp", payload),
+  googleCallbackGet: (params: SocialAuthDto) =>
+    api.get("/auth/google/callback", { params }),
 };

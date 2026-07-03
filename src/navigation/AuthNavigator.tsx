@@ -5,11 +5,13 @@ import { ForgotPasswordScreen } from "@/features/auth/screens/ForgotPasswordScre
 import { CreateNewPasswordScreen } from "@/features/auth/screens/CreateNewPasswordScreen";
 import { OtpVerificationScreen } from "@/features/auth/screens/OtpVerificationScreen";
 
+export type OtpMode = "verifyEmail" | "forgotPassword";
+
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
   ForgotPassword: undefined;
-  OtpVerification: { email: string };
+  OtpVerification: { email: string; mode: OtpMode };
   CreateNewPassword: { email: string; code: string };
 };
 

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Colors } from "@/styles/colors";
@@ -11,11 +11,15 @@ import { AuthButton } from "../components/AuthButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useNavigation } from "@react-navigation/native";
+import { useRegister } from "../hooks/useRegister";
+import { useEffect } from "react";
 
 type SignupNav = NativeStackNavigationProp<AuthStackParamList, "Signup">;
 
 export function SignupScreen() {
   const navigation = useNavigation<SignupNav>();
+  const registerMutation = useRegister();
+
   const {
     control,
     handleSubmit,
@@ -25,8 +29,30 @@ export function SignupScreen() {
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    console.log("Register:", data);
+    registerMutation.mutate(
+      { username: data.name, email: data.email, password: data.password },
+      {
+        onSuccess: () => {
+          navigation.navigate("OtpVerification", {
+            email: data.email,
+            mode: "verifyEmail",
+          });
+        },
+      },
+    );
   };
+
+  useEffect(() => {
+    if (registerMutation.isError) {
+      const message =
+        (
+          registerMutation.error as {
+            response?: { data?: { message?: string } };
+          }
+        )?.response?.data?.message || "Registration failed. Please try again.";
+      Alert.alert("Error", message);
+    }
+  }, [registerMutation.isError]);
 
   return (
     <AuthLayout>
@@ -93,7 +119,11 @@ export function SignupScreen() {
           )}
         />
 
-        <AuthButton label="Create Account" onPress={handleSubmit(onSubmit)} />
+        <AuthButton
+          label="Create Account"
+          onPress={handleSubmit(onSubmit)}
+          loading={registerMutation.isPending}
+        />
       </View>
 
       <View style={styles.footer}>
