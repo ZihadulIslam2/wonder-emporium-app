@@ -1,44 +1,33 @@
-import { View, TextInput, Text, StyleSheet } from "react-native";
+import type { ReactNode } from "react";
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TextInputProps,
+} from "react-native";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
-import type { ReactNode } from "react";
 
-interface AuthInputProps {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
+interface AuthInputProps extends TextInputProps {
   error?: string;
-  secureTextEntry?: boolean;
-  keyboardType?: "default" | "email-address";
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
   icon?: ReactNode;
 }
 
-export function AuthInput({
-  placeholder,
-  value,
-  onChangeText,
-  error,
-  secureTextEntry,
-  keyboardType,
-  autoCapitalize,
-}: AuthInputProps) {
+export function AuthInput({ error, icon, style, ...props }: AuthInputProps) {
   return (
     <View style={styles.container}>
       <View style={[styles.inputWrapper, error && styles.inputWrapperError]}>
+        {icon}
         <TextInput
-          style={styles.input}
-          placeholder={placeholder}
+          style={[styles.input, style]}
           placeholderTextColor={Colors.gray[400]}
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
+          {...props}
         />
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
@@ -48,6 +37,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.gray[300],
     borderRadius: 12,
@@ -59,6 +50,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   input: {
+    flex: 1,
     ...Typography.body,
     color: Colors.black,
     padding: 0,

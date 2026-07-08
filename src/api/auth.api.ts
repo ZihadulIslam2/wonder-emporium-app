@@ -11,7 +11,7 @@ import type {
 } from "@/features/auth/types";
 
 export const authApi = {
-  register: (payload: RegisterDto) => api.post("/auth", payload),
+  register: (payload: RegisterDto) => api.post("/auth/register", payload),
 
   verifyEmail: (payload: VerifyEmailDto) =>
     api.post("/auth/verify-email", payload),

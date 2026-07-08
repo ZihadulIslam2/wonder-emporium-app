@@ -11,21 +11,28 @@ import type {
   User,
 } from "@/features/auth/types";
 
-function isAuthResponse(
-  data: unknown,
-): data is {
-  success: boolean;
-  data: { accessToken: string; refreshToken: string; user: User };
+function isAuthResponse(data: unknown): data is {
+  statusCode: number;
+  message: string;
+  data: {
+    tokens: { accessToken: string; refreshToken: string };
+    user: User;
+  };
 } {
   if (typeof data !== "object" || data === null) return false;
   const d = data as Record<string, unknown>;
-  if (typeof d.success !== "boolean") return false;
+  if (typeof d.statusCode !== "number") return false;
+  if (typeof d.message !== "string") return false;
   if (typeof d.data !== "object" || d.data === null) return false;
+
   const dd = d.data as Record<string, unknown>;
+  if (typeof dd.tokens !== "object" || dd.tokens === null) return false;
+  if (typeof dd.user !== "object" || dd.user === null) return false;
+
+  const tokens = dd.tokens as Record<string, unknown>;
   return (
-    typeof dd.accessToken === "string" &&
-    typeof dd.refreshToken === "string" &&
-    typeof dd.user === "object"
+    typeof tokens.accessToken === "string" &&
+    typeof tokens.refreshToken === "string"
   );
 }
 
@@ -55,9 +62,16 @@ export const authService = {
   login: async (payload: LoginDto) => {
     const response = await authApi.login(payload);
     const data = response.data;
+
     if (isAuthResponse(data)) {
-      await persistAuth(data.data);
-      return data.data;
+      // Extract tokens from the nested structure
+      const authData = {
+        accessToken: data.data.tokens.accessToken,
+        refreshToken: data.data.tokens.refreshToken,
+        user: data.data.user,
+      };
+      await persistAuth(authData);
+      return authData;
     }
     throw new Error("Invalid auth response");
   },

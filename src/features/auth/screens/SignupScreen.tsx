@@ -1,3 +1,4 @@
+// src/features/auth/screens/SignupScreen.tsx
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +13,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useNavigation } from "@react-navigation/native";
 import { useRegister } from "../hooks/useRegister";
-import { useEffect } from "react";
+import axios from "axios";
 
 type SignupNav = NativeStackNavigationProp<AuthStackParamList, "Signup">;
 
@@ -26,33 +27,65 @@ export function SignupScreen() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
   const onSubmit = (data: RegisterFormData) => {
+    console.log("Submitting registration data:", {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      role: "READER",
+    });
+
     registerMutation.mutate(
-      { username: data.name, email: data.email, password: data.password },
       {
-        onSuccess: () => {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        role: "READER",
+      },
+      {
+        onSuccess: (response) => {
+          console.log("Registration success response:", response);
+
+          // The response might be nested differently depending on your API
+          // Check if response.data exists
+          let email = data.email;
+
+          // If your API returns the email in the response, you can use that too
+          if (response?.data?.email) {
+            email = response.data.email;
+          }
+
           navigation.navigate("OtpVerification", {
-            email: data.email,
+            email: email,
             mode: "verifyEmail",
           });
+        },
+        onError: (error: unknown) => {
+          let message = "Registration failed. Please try again.";
+
+          if (axios.isAxiosError(error)) {
+            message = error.response?.data?.message ?? error.message ?? message;
+          } else if (error instanceof Error) {
+            message = error.message;
+          }
+
+          Alert.alert("Error", message);
         },
       },
     );
   };
 
-  useEffect(() => {
-    if (registerMutation.isError) {
-      const message =
-        (
-          registerMutation.error as {
-            response?: { data?: { message?: string } };
-          }
-        )?.response?.data?.message || "Registration failed. Please try again.";
-      Alert.alert("Error", message);
-    }
-  }, [registerMutation.isError]);
+  // Remove the useEffect that was showing errors, we'll handle it in the mutation's onError
 
   return (
     <AuthLayout>
@@ -64,13 +97,29 @@ export function SignupScreen() {
       <View style={styles.form}>
         <Controller
           control={control}
-          name="name"
-          render={({ field: { onChange, value } }) => (
+          name="firstName"
+          render={({ field: { onChange, value, onBlur } }) => (
             <AuthInput
-              placeholder="Full Name"
+              placeholder="First Name"
               value={value}
               onChangeText={onChange}
-              error={errors.name?.message}
+              onBlur={onBlur}
+              error={errors.firstName?.message}
+              autoCapitalize="words"
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="lastName"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <AuthInput
+              placeholder="Last Name"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.lastName?.message}
               autoCapitalize="words"
             />
           )}
@@ -79,11 +128,12 @@ export function SignupScreen() {
         <Controller
           control={control}
           name="email"
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { onChange, value, onBlur } }) => (
             <AuthInput
               placeholder="Enter your email"
               value={value}
               onChangeText={onChange}
+              onBlur={onBlur}
               error={errors.email?.message}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -94,11 +144,12 @@ export function SignupScreen() {
         <Controller
           control={control}
           name="password"
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { onChange, value, onBlur } }) => (
             <AuthInput
               placeholder="Password"
               value={value}
               onChangeText={onChange}
+              onBlur={onBlur}
               error={errors.password?.message}
               secureTextEntry
             />
@@ -108,11 +159,12 @@ export function SignupScreen() {
         <Controller
           control={control}
           name="confirmPassword"
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { onChange, value, onBlur } }) => (
             <AuthInput
               placeholder="Confirm password"
               value={value}
               onChangeText={onChange}
+              onBlur={onBlur}
               error={errors.confirmPassword?.message}
               secureTextEntry
             />
@@ -123,6 +175,7 @@ export function SignupScreen() {
           label="Create Account"
           onPress={handleSubmit(onSubmit)}
           loading={registerMutation.isPending}
+          disabled={registerMutation.isPending}
         />
       </View>
 
