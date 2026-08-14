@@ -37,6 +37,7 @@ export function SignupScreen() {
   });
 
   const onSubmit = (data: RegisterFormData) => {
+    // eslint-disable-next-line no-console
     console.log("Submitting registration data:", {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -54,6 +55,7 @@ export function SignupScreen() {
       },
       {
         onSuccess: (response) => {
+          // eslint-disable-next-line no-console
           console.log("Registration success response:", response);
 
           // The response might be nested differently depending on your API

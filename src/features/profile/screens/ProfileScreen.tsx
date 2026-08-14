@@ -5,12 +5,15 @@ import {
   ImageBackground,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
+import { useQuery } from "@tanstack/react-query";
+import { authApi } from "@/api";
 
 const menuSections = [
   {
@@ -34,6 +37,24 @@ const menuSections = [
 ];
 
 export function ProfileScreen() {
+  const { data: profileData, isLoading } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const response = await authApi.getProfile();
+      return response.data;
+    },
+  });
+
+  const profile = profileData || {
+    userProfile: { firstName: "Sarah", lastName: "Jenkins" },
+    email: "sarah.j@example.app",
+    username: "sarahj",
+  };
+
+  const name = profile.userProfile?.firstName
+    ? `${profile.userProfile.firstName} ${profile.userProfile.lastName || ""}`
+    : profile.username || "User";
+
   return (
     <ImageBackground
       source={bgImage}
@@ -48,61 +69,69 @@ export function ProfileScreen() {
         <Text style={styles.topBarTitle}>Profile</Text>
         <View style={styles.backBtn} />
       </View>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={48} color={Colors.secondary} />
-          </View>
-          <Text style={styles.name}>Sarah Jenkins</Text>
-          <Text style={styles.email}>sarah.j@example.app</Text>
-        </View>
 
-        <View style={styles.menu}>
-          {menuSections.map((section, sIdx) => (
-            <View key={sIdx}>
-              {section.heading && (
-                <Text style={styles.sectionHeading}>
-                  {section.heading.toUpperCase()}
-                </Text>
-              )}
-              <View style={styles.menuCard}>
-                {section.items.map((item, iIdx) => (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={[
-                      styles.menuItem,
-                      iIdx < section.items.length - 1 && styles.menuItemBorder,
-                    ]}
-                    activeOpacity={0.6}
-                  >
-                    <View style={styles.menuLeft}>
-                      <Ionicons
-                        name={item.icon}
-                        size={22}
-                        color={Colors.gray[500]}
-                      />
-                      <Text style={styles.menuLabel}>{item.label}</Text>
-                    </View>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color={Colors.gray[400]}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
+      {isLoading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={Colors.secondary} />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.profileSection}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={48} color={Colors.secondary} />
             </View>
-          ))}
-        </View>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.email}>{profile.email}</Text>
+          </View>
 
-        <TouchableOpacity style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Log out</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.menu}>
+            {menuSections.map((section, sIdx) => (
+              <View key={sIdx}>
+                {section.heading && (
+                  <Text style={styles.sectionHeading}>
+                    {section.heading.toUpperCase()}
+                  </Text>
+                )}
+                <View style={styles.menuCard}>
+                  {section.items.map((item, iIdx) => (
+                    <TouchableOpacity
+                      key={item.label}
+                      style={[
+                        styles.menuItem,
+                        iIdx < section.items.length - 1 &&
+                          styles.menuItemBorder,
+                      ]}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.menuLeft}>
+                        <Ionicons
+                          name={item.icon}
+                          size={22}
+                          color={Colors.gray[500]}
+                        />
+                        <Text style={styles.menuLabel}>{item.label}</Text>
+                      </View>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={Colors.gray[400]}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Log out</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
     </ImageBackground>
   );
 }
@@ -134,6 +163,12 @@ const styles = StyleSheet.create({
   topBarTitle: { ...Typography.h2, color: "#134E4A" },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: Spacing.xxl },
+
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   profileSection: { alignItems: "center", paddingVertical: Spacing.xl },
   avatar: {

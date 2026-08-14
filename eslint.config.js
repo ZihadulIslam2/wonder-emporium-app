@@ -20,6 +20,7 @@ module.exports = [
         require: "readonly",
         module: "readonly",
         __dirname: "readonly",
+        window: "readonly",
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },

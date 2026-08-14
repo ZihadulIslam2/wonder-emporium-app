@@ -48,8 +48,11 @@ export const authService = {
   register: async (payload: RegisterDto) => {
     const response = await authApi.register(payload);
     const data = response.data;
-    if (data.success && data.data?.accessToken && data.data?.refreshToken) {
-      await persistAuth(data.data);
+    if (isAuthResponse(data)) {
+      await persistAuth({
+        accessToken: data.data.tokens.accessToken,
+        refreshToken: data.data.tokens.refreshToken,
+      });
     }
     return data;
   },

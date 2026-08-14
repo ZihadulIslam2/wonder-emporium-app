@@ -7,6 +7,7 @@ import {
   ImageBackground,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -17,54 +18,12 @@ import homepageImg from "../../../assets/images/homepage.png";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
+import { useQuery } from "@tanstack/react-query";
+import { bookApi, authorApi } from "@/api";
+import { useState } from "react";
+import { useWishlistStore } from "@/store/wishlist.store";
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList, "HomeScreen">;
-
-const categories = [
-  "Leadership",
-  "Business",
-  "Personal Growth",
-  "Faith",
-  "Health",
-  "Finance",
-];
-
-const books = [
-  {
-    id: "1",
-    title: "The Lantern of Quiet Hours",
-    author: "Eleanor Whitfield",
-    price: "$24.99",
-    rating: "4.8",
-    originalPrice: "$32.00",
-  },
-  {
-    id: "2",
-    title: "The Garden Within",
-    author: "Marcus Aldridge",
-    price: "$18.99",
-    rating: "4.9",
-  },
-  {
-    id: "3",
-    title: "The Quiet Leader",
-    author: "Marcus Aldridge",
-    price: "$18.99",
-    rating: "4.9",
-  },
-  {
-    id: "4",
-    title: "The Garden Within",
-    author: "Marcus Aldridge",
-    price: "$18.99",
-    rating: "4.9",
-  },
-];
-
-const authors = [
-  { id: "1", name: "Sofia Renner", books: "12 Books", rating: "4.9" },
-  { id: "2", name: "Daniel Okafor", books: "12 Books", rating: "4.9" },
-];
 
 interface BookCardProps {
   id: string;
@@ -72,10 +31,88 @@ interface BookCardProps {
   author: string;
   price: string;
   rating: string;
+  bookCover?: string;
+  coverUrl?: string;
+  cover?: string;
+  files?: Array<{ type: string; url: string } | unknown>;
   onPress?: () => void;
 }
 
-function BookCard({ title, author, price, rating, onPress }: BookCardProps) {
+interface BookApiItem {
+  id: string;
+  title: string;
+  author?: {
+    username?: string;
+    profile?: {
+      firstName?: string;
+      lastName?: string;
+    };
+  };
+  formats?: Array<{ listPrice?: number }>;
+  bookCover?: string;
+  coverUrl?: string;
+  cover?: string;
+  files?: Array<{ type: string; url: string }>;
+  [key: string]: unknown;
+}
+
+interface FormattedBook {
+  id: string;
+  title: string;
+  author: string;
+  price: string;
+  rating: string;
+  audiobookAvailable?: boolean;
+  bookCover?: string;
+  coverUrl?: string;
+  cover?: string;
+  files?: Array<{ type: string; url: string }>;
+  [key: string]: unknown;
+}
+
+interface AuthorApiItem {
+  id: string;
+  username?: string;
+  avatarUrl?: string;
+  bookCount?: number;
+  profile?: {
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  };
+}
+
+interface FormattedAuthor {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  books: string;
+  rating: string;
+}
+
+function BookCard(props: BookCardProps) {
+  const {
+    id,
+    title,
+    author,
+    price,
+    rating,
+    bookCover,
+    coverUrl,
+    cover,
+    files,
+    onPress,
+  } = props;
+  const imageUrl =
+    bookCover ||
+    coverUrl ||
+    cover ||
+    (files as Array<{ type: string; url: string }> | undefined)?.find(
+      (f) => f.type === "COVER",
+    )?.url;
+  const isWishlisted = useWishlistStore((state) => state.isInWishlist(id));
+  const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+
   return (
     <TouchableOpacity
       style={styles.bookCard}
@@ -83,7 +120,26 @@ function BookCard({ title, author, price, rating, onPress }: BookCardProps) {
       activeOpacity={0.7}
     >
       <View style={styles.bookCover}>
-        <Ionicons name="book" size={32} color={Colors.secondary} />
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.bookCoverImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <Ionicons name="book" size={32} color={Colors.secondary} />
+        )}
+        <TouchableOpacity
+          style={styles.wishlistBadge}
+          onPress={() => toggleWishlist(props)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isWishlisted ? "heart" : "heart-outline"}
+            size={16}
+            color={isWishlisted ? "#EF4444" : Colors.gray[600]}
+          />
+        </TouchableOpacity>
       </View>
       <Text style={styles.bookTitle} numberOfLines={1}>
         {title}
@@ -102,21 +158,108 @@ function BookCard({ title, author, price, rating, onPress }: BookCardProps) {
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({
+  title,
+  onViewAll,
+}: {
+  title: string;
+  onViewAll?: () => void;
+}) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <TouchableOpacity>
-        <Text style={styles.viewAll}>View All</Text>
-      </TouchableOpacity>
+      {onViewAll && (
+        <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
+          <Text style={styles.viewAll}>View All</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 export function HomeScreen() {
   const navigation = useNavigation<HomeNav>();
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const handleBookPress = (book: (typeof books)[number]) => {
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await bookApi.getCategories();
+      return res.data;
+    },
+  });
+
+  const { data: booksData, isLoading: isBooksLoading } = useQuery({
+    queryKey: ["books", "approved", searchQuery, selectedCategory],
+    queryFn: async () => {
+      const params: Record<string, unknown> = { limit: 10 };
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      if (selectedCategory !== "All") {
+        params.category = selectedCategory;
+      }
+      const res = await bookApi.getApproved(params);
+      return res.data;
+    },
+  });
+
+  const { data: authorsData, isLoading: isAuthorsLoading } = useQuery({
+    queryKey: ["authors", "founding"],
+    queryFn: async () => {
+      const res = await authorApi.getFoundingAuthors({ limit: 4 });
+      return res.data;
+    },
+  });
+
+  const categories = [
+    "All",
+    ...(categoriesData?.data?.categories?.map(
+      (c: { name: string }) => c.name,
+    ) || []),
+  ];
+
+  const featuredBooks: FormattedBook[] = (booksData?.data?.books || [])
+    .map((b: BookApiItem) => ({
+      ...b,
+      id: b.id,
+      title: b.title,
+      author: b.author?.profile?.firstName
+        ? `${b.author.profile.firstName} ${b.author.profile.lastName}`
+        : b.author?.username || "Unknown Author",
+      price: b.formats?.[0]?.listPrice
+        ? `$${b.formats[0].listPrice.toFixed(2)}`
+        : "Free",
+      rating: "4.8", // Mock rating as API might not provide it
+    }))
+    .filter((b: FormattedBook) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        b.title?.toLowerCase().includes(q) ||
+        b.author?.toLowerCase().includes(q)
+      );
+    });
+
+  const foundingAuthors: FormattedAuthor[] = (authorsData?.data?.authors || [])
+    .map((a: AuthorApiItem) => ({
+      id: a.id,
+      name: a.profile?.firstName
+        ? `${a.profile.firstName} ${a.profile.lastName}`
+        : a.username || "Author",
+      avatarUrl: a.profile?.avatarUrl || a.avatarUrl,
+      books: a.bookCount
+        ? `${a.bookCount} Book${a.bookCount > 1 ? "s" : ""}`
+        : "0 Books",
+      rating: "4.9", // Mock
+    }))
+    .filter((a: FormattedAuthor) => {
+      if (!searchQuery.trim()) return true;
+      return a.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+  const handleBookPress = (book: HomeStackParamList["BookDetail"]["book"]) => {
     navigation.navigate("BookDetail", { book });
   };
 
@@ -158,100 +301,191 @@ export function HomeScreen() {
             style={styles.searchInput}
             placeholder="Search books, authors, audiobooks..."
             placeholderTextColor={Colors.gray[400]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={Colors.gray[400]}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.contentSection}>
-          <SectionHeader title="Categories" />
+          <SectionHeader
+            title="Categories"
+            onViewAll={() => navigation.getParent()?.navigate("Explore")}
+          />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipsRow}
           >
             {categories.map((cat) => {
-              const isSelected = cat === "Leadership";
+              const isSelected = cat === selectedCategory;
               return (
                 <TouchableIndicator
                   key={cat}
                   label={cat}
                   selected={isSelected}
+                  onPress={() => setSelectedCategory(cat)}
                 />
               );
             })}
           </ScrollView>
         </View>
 
-        <View style={styles.contentSection}>
-          <SectionHeader title="Featured Books" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselRow}
-          >
-            {books.map((book) => (
-              <BookCard
-                key={book.id}
-                {...book}
-                onPress={() => handleBookPress(book)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.contentSection}>
-          <SectionHeader title="Popular Audiobook" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselRow}
-          >
-            {books.map((book) => (
-              <BookCard
-                key={book.id}
-                {...book}
-                onPress={() => handleBookPress(book)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.contentSection}>
-          <SectionHeader title="Meet Future Founding Authors" />
-          <View style={styles.authorsRow}>
-            {authors.map((author) => (
-              <View key={author.id} style={styles.authorCard}>
-                <View style={styles.authorAvatar}>
-                  <Ionicons name="person" size={28} color={Colors.secondary} />
-                </View>
-                <Text style={styles.authorName}>{author.name}</Text>
-                <Text style={styles.authorBooks}>{author.books}</Text>
-                <View style={styles.authorRating}>
-                  <Ionicons name="star" size={12} color={Colors.secondary} />
-                  <Text style={styles.authorRatingText}>{author.rating}</Text>
-                </View>
-                <TouchableOpacity style={styles.profileBtn}>
-                  <Text style={styles.profileBtnText}>View Profile</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+        {isBooksLoading ? (
+          <View style={{ padding: Spacing.xl, alignItems: "center" }}>
+            <ActivityIndicator size="large" color={Colors.secondary} />
           </View>
-        </View>
+        ) : (
+          <>
+            <View style={styles.contentSection}>
+              <SectionHeader
+                title="Featured Books"
+                onViewAll={() =>
+                  navigation.navigate("BookList", {
+                    title: "Featured Books",
+                    filterType: "featured",
+                  })
+                }
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselRow}
+              >
+                {featuredBooks.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    {...book}
+                    onPress={() => handleBookPress(book)}
+                  />
+                ))}
+                {featuredBooks.length === 0 && (
+                  <Text style={styles.emptyText}>No featured books yet.</Text>
+                )}
+              </ScrollView>
+            </View>
+
+            <View style={styles.contentSection}>
+              <SectionHeader
+                title="Popular Audiobook"
+                onViewAll={() =>
+                  navigation.navigate("BookList", {
+                    title: "Popular Audiobooks",
+                    filterType: "audiobook",
+                  })
+                }
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselRow}
+              >
+                {featuredBooks
+                  .filter((b) => b.audiobookAvailable)
+                  .map((book) => (
+                    <BookCard
+                      key={book.id}
+                      {...book}
+                      onPress={() => handleBookPress(book)}
+                    />
+                  ))}
+                {featuredBooks.filter((b) => b.audiobookAvailable).length ===
+                  0 && (
+                  <Text style={styles.emptyText}>No audiobooks available.</Text>
+                )}
+              </ScrollView>
+            </View>
+
+            <View style={styles.contentSection}>
+              <SectionHeader
+                title="Recommended For You"
+                onViewAll={() =>
+                  navigation.navigate("BookList", {
+                    title: "Recommended For You",
+                    filterType: "recommended",
+                  })
+                }
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselRow}
+              >
+                {featuredBooks.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    {...book}
+                    onPress={() => handleBookPress(book)}
+                  />
+                ))}
+                {featuredBooks.length === 0 && (
+                  <Text style={styles.emptyText}>
+                    No recommendations found.
+                  </Text>
+                )}
+              </ScrollView>
+            </View>
+          </>
+        )}
 
         <View style={styles.contentSection}>
-          <SectionHeader title="Recommended For You" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselRow}
-          >
-            {books.map((book) => (
-              <BookCard
-                key={book.id}
-                {...book}
-                onPress={() => handleBookPress(book)}
-              />
-            ))}
-          </ScrollView>
+          <SectionHeader
+            title="Meet Future Founding Authors"
+            onViewAll={() =>
+              navigation.navigate("AuthorsList", {
+                title: "Future Founding Authors",
+              })
+            }
+          />
+          {isAuthorsLoading ? (
+            <View style={{ padding: Spacing.md, alignItems: "center" }}>
+              <ActivityIndicator size="small" color={Colors.secondary} />
+            </View>
+          ) : (
+            <View style={styles.authorsRow}>
+              {foundingAuthors.map((author) => (
+                <View key={author.id} style={styles.authorCard}>
+                  <View style={styles.authorAvatar}>
+                    {author.avatarUrl ? (
+                      <Image
+                        source={{ uri: author.avatarUrl }}
+                        style={styles.authorAvatarImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons
+                        name="person"
+                        size={28}
+                        color={Colors.secondary}
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.authorName}>{author.name}</Text>
+                  <Text style={styles.authorBooks}>{author.books}</Text>
+                  <View style={styles.authorRating}>
+                    <Ionicons name="star" size={12} color={Colors.secondary} />
+                    <Text style={styles.authorRatingText}>{author.rating}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.profileBtn}>
+                    <Text style={styles.profileBtnText}>View Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {foundingAuthors.length === 0 && (
+                <Text style={styles.emptyText}>No authors found.</Text>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </ImageBackground>
@@ -261,12 +495,17 @@ export function HomeScreen() {
 function TouchableIndicator({
   label,
   selected,
+  onPress,
 }: {
   label: string;
   selected?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.chip, selected && styles.chipSelected]}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.chip, selected && styles.chipSelected]}
+    >
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
         {label}
       </Text>
@@ -406,6 +645,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
+    overflow: "hidden",
+    position: "relative",
+  },
+  wishlistBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 12,
+    width: 26,
+    height: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bookCoverImage: {
+    width: "100%",
+    height: "100%",
   },
   bookTitle: {
     ...Typography.bodySmall,
@@ -466,6 +727,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
+    overflow: "hidden",
+  },
+  authorAvatarImage: {
+    width: "100%",
+    height: "100%",
   },
   authorName: {
     ...Typography.body,
@@ -501,5 +767,11 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontWeight: "600",
     color: Colors.black,
+  },
+  emptyText: {
+    ...Typography.bodySmall,
+    color: Colors.gray[500],
+    padding: Spacing.md,
+    fontStyle: "italic",
   },
 });

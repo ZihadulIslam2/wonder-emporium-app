@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { HomeScreen } from "@/features/home/screens/HomeScreen";
 import { BookDetailScreen } from "@/features/home/screens/BookDetailScreen";
+import { BookListScreen } from "@/features/home/screens/BookListScreen";
+import { AuthorsListScreen } from "@/features/home/screens/AuthorsListScreen";
 import { CartScreen } from "@/features/cart/screens/CartScreen";
 import { CategoriesScreen } from "@/features/categories/screens/CategoriesScreen";
 import { WishlistScreen } from "@/features/wishlist/screens/WishlistScreen";
@@ -18,7 +20,19 @@ export type HomeStackParamList = {
       author: string;
       price: string;
       rating: string;
+      bookCover?: string;
+      coverUrl?: string;
+      cover?: string;
+      files?: Array<{ type: string; url: string } | unknown>;
+      [key: string]: unknown;
     };
+  };
+  BookList: {
+    title: string;
+    filterType?: "featured" | "audiobook" | "recommended";
+  };
+  AuthorsList: {
+    title: string;
   };
 };
 
@@ -48,6 +62,16 @@ function HomeNavigator() {
       <HomeStack.Screen
         name="BookDetail"
         component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="BookList"
+        component={BookListScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="AuthorsList"
+        component={AuthorsListScreen}
         options={{ headerShown: false }}
       />
     </HomeStack.Navigator>

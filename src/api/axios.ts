@@ -12,14 +12,6 @@ export const api = axios.create({
   },
 });
 
-const AUTH_ENDPOINTS = [
-  "/auth",
-  "/auth/login",
-  "/auth/refresh-token",
-  "/auth/google",
-  "/auth/google/callback",
-];
-
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -42,16 +34,9 @@ api.interceptors.request.use(
     const deviceId = await deviceService.getDeviceId();
     config.headers["x-device"] = deviceId;
 
-    const url = config.url || "";
-    const isAuthEndpoint = AUTH_ENDPOINTS.some((endpoint) =>
-      url.startsWith(endpoint),
-    );
-
-    if (!isAuthEndpoint) {
-      const token = await storage.get(Constants.tokenKey);
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = await storage.get(Constants.tokenKey);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -89,7 +74,7 @@ api.interceptors.response.use(
       }
 
       const response = await axios.post(
-        `${env.apiUrl}/auth/refresh-token`,
+        `${env.apiUrl}/auth/refresh`,
         { refreshToken },
         {
           headers: { "Content-Type": "application/json" },

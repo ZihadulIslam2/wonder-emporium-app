@@ -6,6 +6,9 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -14,6 +17,9 @@ import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { cartApi } from "@/api";
+import { useWishlistStore } from "@/store/wishlist.store";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "BookDetail">;
 
@@ -78,8 +84,76 @@ function BookCardSm({
 
 export function BookDetailScreen({ route, navigation }: Props) {
   const { book } = route.params;
-  const [selectedFormat, setSelectedFormat] = useState("eBook");
+  const [selectedFormat, setSelectedFormat] = useState<string>("DIGITAL");
+
+  const isWishlisted = useWishlistStore((state) => state.isInWishlist(book.id));
+  const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
   const [descExpanded, setDescExpanded] = useState(false);
+  const queryClient = useQueryClient();
+
+  const coverUrl =
+    book?.bookCover ||
+    book?.coverUrl ||
+    book?.cover ||
+    (book?.files as Array<{ type?: string; url?: string }> | undefined)?.find(
+      (f) => f.type === "COVER",
+    )?.url;
+
+  const selectedFormatObj =
+    (
+      book?.formats as
+        | Array<{ id: string; formatType?: string; listPrice?: number }>
+        | undefined
+    )?.find(
+      (f) => f.formatType?.toUpperCase() === selectedFormat.toUpperCase(),
+    ) || book?.formats?.[0];
+
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
+      const formatId = selectedFormatObj?.id || book?.formats?.[0]?.id;
+      if (!formatId) {
+        throw new Error("No available format for this book.");
+      }
+      return cartApi.addItem({
+        bookId: book.id,
+        formatId: formatId,
+        quantity: 1,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      Alert.alert("Success", "Book added to cart!");
+    },
+    onError: (
+      error: Error & {
+        response?: { status?: number; data?: { message?: string } };
+      },
+    ) => {
+      const message =
+        error?.response?.data?.message ||
+        (error?.response?.status === 401
+          ? "Please log in to add items to your cart."
+          : error.message || "Failed to add item to cart.");
+      Alert.alert("Error", message);
+    },
+  });
+
+  const handleAddToCart = () => {
+    addToCartMutation.mutate();
+  };
+
+  const handleBuyNow = () => {
+    addToCartMutation.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        navigation.getParent()?.navigate("Cart");
+      },
+    });
+  };
+
+  const displayPrice = selectedFormatObj?.listPrice
+    ? `$${selectedFormatObj.listPrice.toFixed(2)}`
+    : book.price || "$24.99";
 
   return (
     <ImageBackground
@@ -96,7 +170,16 @@ export function BookDetailScreen({ route, navigation }: Props) {
           <Ionicons name="arrow-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Book Details</Text>
-        <View style={styles.backBtn} />
+        <TouchableOpacity
+          onPress={() => toggleWishlist(book)}
+          style={styles.backBtn}
+        >
+          <Ionicons
+            name={isWishlisted ? "heart" : "heart-outline"}
+            size={24}
+            color={isWishlisted ? "#EF4444" : Colors.black}
+          />
+        </TouchableOpacity>
       </View>
       <ScrollView
         style={styles.scrollView}
@@ -104,9 +187,17 @@ export function BookDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.heroSection}>
-          <View style={styles.heroImage}>
-            <Ionicons name="book" size={64} color={Colors.secondary} />
-          </View>
+          {coverUrl ? (
+            <Image
+              source={{ uri: coverUrl }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.heroImage}>
+              <Ionicons name="book" size={64} color={Colors.secondary} />
+            </View>
+          )}
           <View style={styles.heroDots}>
             <View style={[styles.dot, styles.dotActive]} />
             <View style={styles.dot} />
@@ -140,16 +231,31 @@ export function BookDetailScreen({ route, navigation }: Props) {
           </View>
 
           <View style={styles.priceRow}>
-            <Text style={styles.oldPrice}>$32.00</Text>
-            <Text style={styles.currentPrice}>$24.99</Text>
+            <Text style={styles.currentPrice}>{displayPrice}</Text>
           </View>
 
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.addToCartBtn}>
-              <Text style={styles.addToCartText}>ADD TO CART</Text>
+            <TouchableOpacity
+              style={styles.addToCartBtn}
+              onPress={handleAddToCart}
+              disabled={addToCartMutation.isPending}
+            >
+              {addToCartMutation.isPending ? (
+                <ActivityIndicator color={Colors.secondary} size="small" />
+              ) : (
+                <Text style={styles.addToCartText}>ADD TO CART</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buyNowBtn}>
-              <Text style={styles.buyNowText}>BUY NOW</Text>
+            <TouchableOpacity
+              style={styles.buyNowBtn}
+              onPress={handleBuyNow}
+              disabled={addToCartMutation.isPending}
+            >
+              {addToCartMutation.isPending ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <Text style={styles.buyNowText}>BUY NOW</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

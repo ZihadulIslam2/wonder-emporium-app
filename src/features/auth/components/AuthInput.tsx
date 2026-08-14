@@ -15,7 +15,13 @@ interface AuthInputProps extends TextInputProps {
   icon?: ReactNode;
 }
 
-export function AuthInput({ error, icon, style, ...props }: AuthInputProps) {
+export function AuthInput({
+  error,
+  icon,
+  style,
+  value,
+  ...props
+}: AuthInputProps) {
   return (
     <View style={styles.container}>
       <View style={[styles.inputWrapper, error && styles.inputWrapperError]}>
@@ -23,6 +29,7 @@ export function AuthInput({ error, icon, style, ...props }: AuthInputProps) {
         <TextInput
           style={[styles.input, style]}
           placeholderTextColor={Colors.gray[400]}
+          value={value ?? ""}
           {...props}
         />
       </View>
