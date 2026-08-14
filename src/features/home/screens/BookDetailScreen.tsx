@@ -99,18 +99,18 @@ export function BookDetailScreen({ route, navigation }: Props) {
       (f) => f.type === "COVER",
     )?.url;
 
+  const formatsList = book?.formats as
+    Array<{ id: string; formatType?: string; listPrice?: number }> | undefined;
+
   const selectedFormatObj =
-    (
-      book?.formats as
-        | Array<{ id: string; formatType?: string; listPrice?: number }>
-        | undefined
-    )?.find(
+    formatsList?.find(
       (f) => f.formatType?.toUpperCase() === selectedFormat.toUpperCase(),
-    ) || book?.formats?.[0];
+    ) || formatsList?.[0];
 
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      const formatId = selectedFormatObj?.id || book?.formats?.[0]?.id;
+      const formatId = selectedFormatObj?.id || formatsList?.[0]?.id;
+
       if (!formatId) {
         throw new Error("No available format for this book.");
       }

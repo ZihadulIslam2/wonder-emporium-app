@@ -14,6 +14,9 @@ import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/api";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { ProfileStackParamList } from "@/navigation/MainNavigator";
 
 const menuSections = [
   {
@@ -37,6 +40,9 @@ const menuSections = [
 ];
 
 export function ProfileScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+
   const { data: profileData, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -106,6 +112,11 @@ export function ProfileScreen() {
                           styles.menuItemBorder,
                       ]}
                       activeOpacity={0.6}
+                      onPress={() => {
+                        if (item.label === "My Library") {
+                          navigation.navigate("MyLibraryScreen");
+                        }
+                      }}
                     >
                       <View style={styles.menuLeft}>
                         <Ionicons

@@ -10,6 +10,7 @@ import { CartScreen } from "@/features/cart/screens/CartScreen";
 import { CategoriesScreen } from "@/features/categories/screens/CategoriesScreen";
 import { WishlistScreen } from "@/features/wishlist/screens/WishlistScreen";
 import { ProfileScreen } from "@/features/profile/screens/ProfileScreen";
+import { MyLibraryScreen } from "@/features/profile/screens/MyLibraryScreen";
 
 export type HomeStackParamList = {
   HomeScreen: undefined;
@@ -36,6 +37,12 @@ export type HomeStackParamList = {
   };
 };
 
+export type ProfileStackParamList = {
+  ProfileScreen: undefined;
+  MyLibraryScreen: undefined;
+  BookDetail: HomeStackParamList["BookDetail"];
+};
+
 type MainTabParamList = {
   Home: undefined;
   Cart: undefined;
@@ -49,7 +56,7 @@ const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const CartStack = createNativeStackNavigator();
 const ExploreStack = createNativeStackNavigator();
 const FavoritesStack = createNativeStackNavigator();
-const ProfileStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 function HomeNavigator() {
   return (
@@ -120,6 +127,16 @@ function ProfileNavigator() {
       <ProfileStack.Screen
         name="ProfileScreen"
         component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="MyLibraryScreen"
+        component={MyLibraryScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="BookDetail"
+        component={BookDetailScreen}
         options={{ headerShown: false }}
       />
     </ProfileStack.Navigator>

@@ -131,7 +131,11 @@ function BookCard(props: BookCardProps) {
         )}
         <TouchableOpacity
           style={styles.wishlistBadge}
-          onPress={() => toggleWishlist(props)}
+          onPress={() =>
+            toggleWishlist(
+              props as unknown as Parameters<typeof toggleWishlist>[0],
+            )
+          }
           activeOpacity={0.7}
         >
           <Ionicons
