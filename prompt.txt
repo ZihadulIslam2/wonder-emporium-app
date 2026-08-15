@@ -6,3 +6,5 @@ look at the screenshot i have given you make the button nav bar same like this a
 
 p3: 
 I have given you a refrence of based on the image update the app home page hero section 
+
+p4: 

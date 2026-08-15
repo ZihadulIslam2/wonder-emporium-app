@@ -279,47 +279,55 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.header}>
-          <Text style={styles.slogan}>
-            Stories That Inspire,{"\n"}Teach & Transform
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            Inspiring books, audiobooks, and timeless wisdom curated for
-            lifelong learners.
-          </Text>
-          <Image
-            source={homepageImg}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-        </View>
+        <ImageBackground
+          source={homepageImg}
+          style={styles.header}
+          imageStyle={styles.headerImage}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay} />
 
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={Colors.gray[400]}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search books, authors, audiobooks..."
-            placeholderTextColor={Colors.gray[400]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={Colors.gray[400]}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.slogan}>
+              Stories That Inspire, Teach{"\n"}& Transform
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              Inspiring books, audiobooks, and timeless wisdom curated for
+              lifelong learners.
+            </Text>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search-outline"
+              size={22}
+              color={Colors.gray[500]}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search books, authors, audiobooks..."
+              placeholderTextColor={Colors.gray[400]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={Colors.gray[400]}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.curveContainer}>
+            <View style={styles.curve} />
+          </View>
+        </ImageBackground>
 
         <View style={styles.contentSection}>
           <SectionHeader
@@ -558,10 +566,23 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   header: {
-    backgroundColor: DARK_GREEN,
+    paddingTop: 54,
+    paddingBottom: 0,
+    position: "relative",
+    overflow: "hidden",
+  },
+  headerImage: {
+    resizeMode: "cover",
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+  },
+  headerTextContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
-    paddingBottom: Spacing.xl,
+    maxWidth: "75%",
+    marginBottom: Spacing.md,
+    marginTop: Spacing.sm,
   },
   slogan: {
     fontSize: 28,
@@ -569,42 +590,52 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontFamily: "serif",
     lineHeight: 36,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
+    letterSpacing: -0.2,
   },
   headerSubtitle: {
-    ...Typography.body,
-    color: "rgba(255,255,255,0.8)",
-    lineHeight: 24,
-  },
-  heroImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 12,
-    marginTop: Spacing.md,
+    ...Typography.bodySmall,
+    color: "rgba(255, 255, 255, 0.85)",
+    lineHeight: 20,
+    fontWeight: "400",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.white,
     marginHorizontal: Spacing.lg,
-    marginTop: -Spacing.lg,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    height: 52,
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 5,
+    marginBottom: Spacing.md,
   },
   searchIcon: {
     marginRight: Spacing.sm,
   },
   searchInput: {
     flex: 1,
-    ...Typography.body,
+    ...Typography.bodySmall,
+    fontSize: 14,
     color: Colors.black,
     padding: 0,
+  },
+  curveContainer: {
+    height: 16,
+    width: "100%",
+    overflow: "hidden",
+  },
+  curve: {
+    height: 40,
+    width: "120%",
+    marginLeft: "-10%",
+    backgroundColor: "#F9FAFB",
+    borderTopLeftRadius: 150,
+    borderTopRightRadius: 150,
   },
   contentSection: {
     marginTop: Spacing.lg,
