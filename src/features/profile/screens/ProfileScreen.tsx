@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -47,16 +48,23 @@ export function ProfileScreen() {
   const logoutMutation = useLogout();
 
   const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out",
-        style: "destructive",
-        onPress: () => {
-          logoutMutation.mutate(undefined);
+    if (Platform.OS === "web") {
+      const confirmed = globalThis.confirm("Are you sure you want to log out?");
+      if (confirmed) {
+        logoutMutation.mutate(undefined);
+      }
+    } else {
+      Alert.alert("Log Out", "Are you sure you want to log out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => {
+            logoutMutation.mutate(undefined);
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const { data: profileData, isLoading } = useQuery({

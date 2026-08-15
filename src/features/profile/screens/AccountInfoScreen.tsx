@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -19,10 +20,32 @@ import bgImage from "@/assets/onboarding/onboarding bg.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/api";
 import { useNavigation } from "@react-navigation/native";
+import { useLogout } from "@/features/auth";
 
 export function AccountInfoScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const logoutMutation = useLogout();
+
+  const handleLogout = () => {
+    if (Platform.OS === "web") {
+      const confirmed = globalThis.confirm("Are you sure you want to log out?");
+      if (confirmed) {
+        logoutMutation.mutate(undefined);
+      }
+    } else {
+      Alert.alert("Log Out", "Are you sure you want to log out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => {
+            logoutMutation.mutate(undefined);
+          },
+        },
+      ]);
+    }
+  };
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -303,6 +326,28 @@ export function AccountInfoScreen() {
                 )}
               </TouchableOpacity>
             </View>
+
+            {/* Log Out Button */}
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={handleLogout}
+              disabled={logoutMutation.isPending}
+              activeOpacity={0.7}
+            >
+              {logoutMutation.isPending ? (
+                <ActivityIndicator color="#EF4444" />
+              ) : (
+                <>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={20}
+                    color="#EF4444"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.logoutText}>Log out</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -462,4 +507,16 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: "700",
   },
+  logoutBtn: {
+    flexDirection: "row",
+    marginTop: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: "#EF4444",
+    borderRadius: 12,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEF2F2",
+  },
+  logoutText: { ...Typography.button, color: "#EF4444", fontWeight: "700" },
 });
