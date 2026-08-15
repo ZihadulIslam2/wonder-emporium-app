@@ -39,142 +39,6 @@ interface FormattedLibraryBook {
 const FILTER_TABS = ["All", "eBooks", "Audiobooks", "Completed"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
-const FALLBACK_RECENT_PURCHASES: FormattedLibraryBook[] = [
-  {
-    id: "lib-1",
-    orderItemId: "item-1",
-    title: "The Quiet Leader",
-    author: "Marcus Aldridge",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
-  },
-  {
-    id: "lib-2",
-    orderItemId: "item-2",
-    title: "Wisdom of the Ages",
-    author: "Helena Voss",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600",
-  },
-  {
-    id: "lib-3",
-    orderItemId: "item-3",
-    title: "The Quiet Leader",
-    author: "Marcus Aldridge",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
-  },
-  {
-    id: "lib-4",
-    orderItemId: "item-4",
-    title: "Wisdom of the Ages",
-    author: "Helena Voss",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600",
-  },
-];
-
-const FALLBACK_MY_BOOKS: FormattedLibraryBook[] = [
-  {
-    id: "lib-1",
-    orderItemId: "item-1",
-    title: "The Quiet Leader",
-    author: "Marcus Aldridge",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
-  },
-  {
-    id: "lib-2",
-    orderItemId: "item-2",
-    title: "Wisdom of the Ages",
-    author: "Helena Voss",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600",
-  },
-  {
-    id: "lib-3",
-    orderItemId: "item-3",
-    title: "The Quiet Leader",
-    author: "Marcus Aldridge",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
-  },
-  {
-    id: "lib-4",
-    orderItemId: "item-4",
-    title: "Wisdom of the Ages",
-    author: "Helena Voss",
-    rating: "4.9",
-    progress: 72,
-    type: "EBOOK",
-    status: "READING",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600",
-  },
-];
-
-const FALLBACK_RECENTLY_OPENED = [
-  {
-    id: "recent-1",
-    title: "The Silent Orchard",
-    subtitle: "Book • 72% complete",
-    coverUrl:
-      "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=600",
-  },
-  {
-    id: "recent-2",
-    title: "Whispers in the Pines",
-    subtitle: "Audiobook • 48% listened",
-    coverUrl:
-      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=600",
-  },
-];
-
-const FALLBACK_RECOMMENDED = [
-  {
-    id: "rec-1",
-    title: "The Garden Within",
-    author: "James Hale",
-    coverUrl:
-      "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=600",
-  },
-  {
-    id: "rec-2",
-    title: "Wisdom of the Ages",
-    author: "Helena Voss",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600",
-  },
-];
-
 export function MyLibraryScreen() {
   const navigation = useNavigation<ProfileNav>();
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
@@ -197,49 +61,49 @@ export function MyLibraryScreen() {
     },
   });
 
-  // Format Library items from API response or fallback if user has no purchases yet
+  // Extract array of LibraryItem from response
   const apiLibraryItems: LibraryItem[] = Array.isArray(libraryRes)
     ? libraryRes
     : (libraryRes as unknown as { data?: LibraryItem[] })?.data || [];
 
-  const libraryBooks: FormattedLibraryBook[] =
-    apiLibraryItems.length > 0
-      ? apiLibraryItems.map((item, idx) => {
-          const b = item.book;
-          const formatType = item.format?.type || "EBOOK";
-          const progressVal = item.progress ?? (idx % 2 === 0 ? 72 : 48);
-          const isCompleted = item.status === "COMPLETED" || progressVal >= 100;
-          const status = isCompleted
-            ? "COMPLETED"
-            : progressVal > 0
-              ? "READING"
-              : "NOT_STARTED";
+  // Format Library items from API response
+  const libraryBooks: FormattedLibraryBook[] = apiLibraryItems.map(
+    (item, idx) => {
+      const b = item.book;
+      const formatType = item.format?.type || "EBOOK";
+      const progressVal = item.progress ?? 0;
+      const isCompleted = item.status === "COMPLETED" || progressVal >= 100;
+      const status = isCompleted
+        ? "COMPLETED"
+        : progressVal > 0
+          ? "READING"
+          : "NOT_STARTED";
 
-          return {
-            id: b.id || `item-${idx}`,
-            orderItemId: item.orderItemId,
-            title: b.title || "Untitled Book",
-            author:
-              typeof b.author === "string"
-                ? b.author
-                : b.author?.profile?.firstName
-                  ? `${b.author.profile.firstName} ${b.author.profile.lastName || ""}`
-                  : b.author?.username || "Unknown Author",
-            rating:
-              typeof b.rating === "number"
-                ? b.rating.toFixed(1)
-                : b.rating || "4.9",
-            progress: progressVal,
-            type: formatType,
-            status,
-            coverUrl:
-              b.bookCover ||
-              b.coverUrl ||
-              b.cover ||
-              "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
-          };
-        })
-      : FALLBACK_MY_BOOKS;
+      return {
+        id: b?.id || `item-${idx}`,
+        orderItemId: item.orderItemId,
+        title: b?.title || "Untitled Book",
+        author:
+          typeof b?.author === "string"
+            ? b.author
+            : b?.author?.profile?.firstName
+              ? `${b.author.profile.firstName} ${b.author.profile.lastName || ""}`.trim()
+              : b?.author?.username || "Unknown Author",
+        rating:
+          typeof b?.rating === "number"
+            ? b.rating.toFixed(1)
+            : b?.rating || "4.9",
+        progress: progressVal,
+        type: formatType,
+        status,
+        coverUrl:
+          b?.bookCover ||
+          b?.coverUrl ||
+          b?.cover ||
+          "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
+      };
+    },
+  );
 
   // Filter books based on active tab
   const filteredMyBooks = libraryBooks.filter((book) => {
@@ -251,12 +115,13 @@ export function MyLibraryScreen() {
     return true;
   });
 
-  const recentPurchases =
-    apiLibraryItems.length > 0
-      ? libraryBooks.slice(0, 4)
-      : FALLBACK_RECENT_PURCHASES;
+  const recentPurchases = libraryBooks.slice(0, 4);
 
-  // Recommended books from API or fallback
+  const recentlyOpened = libraryBooks.filter(
+    (book) => book.progress > 0 || book.status === "READING",
+  );
+
+  // Recommended books from API
   const apiRecommended =
     (
       recommendedRes as unknown as {
@@ -273,21 +138,36 @@ export function MyLibraryScreen() {
           }>;
         };
       }
-    )?.data?.books || [];
-  const recommendedBooks =
-    apiRecommended.length > 0
-      ? apiRecommended.map((b) => ({
-          id: b.id,
-          title: b.title,
-          author: b.author?.profile?.firstName
-            ? `${b.author.profile.firstName} ${b.author.profile.lastName || ""}`
-            : b.author?.username || "Unknown Author",
-          coverUrl:
-            b.bookCover ||
-            b.coverUrl ||
-            "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=600",
-        }))
-      : FALLBACK_RECOMMENDED;
+    )?.data?.books ||
+    (Array.isArray(recommendedRes)
+      ? recommendedRes
+      : (
+          recommendedRes as unknown as {
+            data?: Array<{
+              id: string;
+              title: string;
+              author?: {
+                username?: string;
+                profile?: { firstName?: string; lastName?: string };
+              };
+              bookCover?: string;
+              coverUrl?: string;
+            }>;
+          }
+        )?.data) ||
+    [];
+
+  const recommendedBooks = apiRecommended.map((b) => ({
+    id: b.id,
+    title: b.title || "Untitled Book",
+    author: b.author?.profile?.firstName
+      ? `${b.author.profile.firstName} ${b.author.profile.lastName || ""}`.trim()
+      : b.author?.username || "Unknown Author",
+    coverUrl:
+      b.bookCover ||
+      b.coverUrl ||
+      "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=600",
+  }));
 
   const handleBookPress = (bookId: string, title: string) => {
     navigation.navigate("BookDetail", {
@@ -362,142 +242,167 @@ export function MyLibraryScreen() {
           {/* Section 1: Recent Purchases */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Recent Purchases</Text>
-            <View style={styles.gridContainer}>
-              {recentPurchases.slice(0, 4).map((book, idx) => (
-                <TouchableOpacity
-                  key={`${book.id}-${idx}`}
-                  style={styles.bookCard}
-                  onPress={() => handleBookPress(book.id, book.title)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.coverWrapper}>
-                    <Image
-                      source={{ uri: book.coverUrl }}
-                      style={styles.coverImage}
-                      resizeMode="cover"
-                    />
-                  </View>
-                  <Text style={styles.bookTitle} numberOfLines={1}>
-                    {book.title}
-                  </Text>
-                  <Text style={styles.bookAuthor} numberOfLines={1}>
-                    {book.author}
-                  </Text>
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={13} color="#EAB308" />
-                    <Text style={styles.ratingText}>{book.rating}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {recentPurchases.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {recentPurchases.map((book, idx) => (
+                  <TouchableOpacity
+                    key={`${book.id}-${idx}`}
+                    style={styles.bookCard}
+                    onPress={() => handleBookPress(book.id, book.title)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.coverWrapper}>
+                      <Image
+                        source={{ uri: book.coverUrl }}
+                        style={styles.coverImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <Text style={styles.bookTitle} numberOfLines={1}>
+                      {book.title}
+                    </Text>
+                    <Text style={styles.bookAuthor} numberOfLines={1}>
+                      {book.author}
+                    </Text>
+                    <View style={styles.ratingRow}>
+                      <Ionicons name="star" size={13} color="#EAB308" />
+                      <Text style={styles.ratingText}>{book.rating}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="bag-handle-outline" size={32} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>No Recent Purchases</Text>
+                <Text style={styles.emptySubtitle}>
+                  Books you purchase will appear here.
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Section 2: My Books */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>My Books</Text>
-            <View style={styles.gridContainer}>
-              {filteredMyBooks.map((book, idx) => (
-                <TouchableOpacity
-                  key={`${book.id}-my-${idx}`}
-                  style={styles.bookCard}
-                  onPress={() => handleBookPress(book.id, book.title)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.coverWrapper}>
-                    <Image
-                      source={{ uri: book.coverUrl }}
-                      style={styles.coverImage}
-                      resizeMode="cover"
-                    />
-                  </View>
-                  <Text style={styles.bookTitle} numberOfLines={1}>
-                    {book.title}
-                  </Text>
-                  <Text style={styles.progressCaption}>Reading progress</Text>
-                  <View style={styles.progressBarTrack}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${Math.min(book.progress, 100)}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.progressText}>
-                    {book.progress}% complete
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              {filteredMyBooks.length === 0 && (
-                <Text style={styles.emptyText}>
-                  No books found in this category.
+            {filteredMyBooks.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {filteredMyBooks.map((book, idx) => (
+                  <TouchableOpacity
+                    key={`${book.id}-my-${idx}`}
+                    style={styles.bookCard}
+                    onPress={() => handleBookPress(book.id, book.title)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.coverWrapper}>
+                      <Image
+                        source={{ uri: book.coverUrl }}
+                        style={styles.coverImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <Text style={styles.bookTitle} numberOfLines={1}>
+                      {book.title}
+                    </Text>
+                    <Text style={styles.progressCaption}>Reading progress</Text>
+                    <View style={styles.progressBarTrack}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          { width: `${Math.min(book.progress, 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {book.progress}% complete
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="library-outline" size={36} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>
+                  {activeTab === "All"
+                    ? "Your Library is Empty"
+                    : `No ${activeTab} Found`}
                 </Text>
-              )}
-            </View>
+                <Text style={styles.emptySubtitle}>
+                  {activeTab === "All"
+                    ? "Explore our store and purchase books to start reading."
+                    : `You don't have any ${activeTab.toLowerCase()} in your collection.`}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Section 3: Recently Opened */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recently Opened</Text>
-            <View style={styles.recentlyOpenedList}>
-              {FALLBACK_RECENTLY_OPENED.map((item) => (
-                <View key={item.id} style={styles.openedCard}>
-                  <Image
-                    source={{ uri: item.coverUrl }}
-                    style={styles.openedThumb}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.openedInfo}>
-                    <Text style={styles.openedTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={styles.openedSubtitle}>{item.subtitle}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.continueBtn}
-                    onPress={() => handleBookPress(item.id, item.title)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.continueText}>CONTINUE</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Section 4: Recommended For You */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Recommended For You</Text>
-              <TouchableOpacity activeOpacity={0.7}>
-                <Text style={styles.viewAllText}>View All</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.gridContainer}>
-              {recommendedBooks.slice(0, 2).map((b) => (
-                <TouchableOpacity
-                  key={b.id}
-                  style={styles.bookCard}
-                  onPress={() => handleBookPress(b.id, b.title)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.coverWrapper}>
+          {recentlyOpened.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Recently Opened</Text>
+              <View style={styles.recentlyOpenedList}>
+                {recentlyOpened.map((item) => (
+                  <View key={item.id} style={styles.openedCard}>
                     <Image
-                      source={{ uri: b.coverUrl }}
-                      style={styles.coverImage}
+                      source={{ uri: item.coverUrl }}
+                      style={styles.openedThumb}
                       resizeMode="cover"
                     />
+                    <View style={styles.openedInfo}>
+                      <Text style={styles.openedTitle} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.openedSubtitle}>
+                        {item.type === "AUDIOBOOK" ? "Audiobook" : "Book"} •{" "}
+                        {item.progress}% complete
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.continueBtn}
+                      onPress={() => handleBookPress(item.id, item.title)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.continueText}>CONTINUE</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.bookTitle} numberOfLines={1}>
-                    {b.title}
-                  </Text>
-                  <Text style={styles.bookAuthor} numberOfLines={1}>
-                    {b.author}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                ))}
+              </View>
             </View>
-          </View>
+          )}
+
+          {/* Section 4: Recommended For You */}
+          {recommendedBooks.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Recommended For You</Text>
+              </View>
+
+              <View style={styles.gridContainer}>
+                {recommendedBooks.slice(0, 4).map((b) => (
+                  <TouchableOpacity
+                    key={b.id}
+                    style={styles.bookCard}
+                    onPress={() => handleBookPress(b.id, b.title)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.coverWrapper}>
+                      <Image
+                        source={{ uri: b.coverUrl }}
+                        style={styles.coverImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <Text style={styles.bookTitle} numberOfLines={1}>
+                      {b.title}
+                    </Text>
+                    <Text style={styles.bookAuthor} numberOfLines={1}>
+                      {b.author}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
         </ScrollView>
       )}
     </ImageBackground>
@@ -591,11 +496,6 @@ const styles = StyleSheet.create({
     color: "#2C3531",
     fontFamily: "serif",
     marginBottom: Spacing.sm,
-  },
-  viewAllText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: ACCENT_GOLD,
   },
 
   gridContainer: {
@@ -726,10 +626,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  emptyText: {
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#F0EBE1",
+    borderStyle: "dashed",
+    marginVertical: Spacing.xs,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#374151",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  emptySubtitle: {
     fontSize: 13,
     color: "#6B7280",
-    fontStyle: "italic",
-    marginVertical: Spacing.md,
+    textAlign: "center",
   },
 });

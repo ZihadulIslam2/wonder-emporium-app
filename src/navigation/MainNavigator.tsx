@@ -11,6 +11,10 @@ import { CategoriesScreen } from "@/features/categories/screens/CategoriesScreen
 import { WishlistScreen } from "@/features/wishlist/screens/WishlistScreen";
 import { ProfileScreen } from "@/features/profile/screens/ProfileScreen";
 import { MyLibraryScreen } from "@/features/profile/screens/MyLibraryScreen";
+import { AccountInfoScreen } from "@/features/profile/screens/AccountInfoScreen";
+import { ChangePasswordScreen } from "@/features/profile/screens/ChangePasswordScreen";
+import { HelpCenterScreen } from "@/features/profile/screens/HelpCenterScreen";
+import { AboutAppScreen } from "@/features/profile/screens/AboutAppScreen";
 
 export type HomeStackParamList = {
   HomeScreen: undefined;
@@ -45,7 +49,11 @@ export type HomeStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
+  AccountInfoScreen: undefined;
+  ChangePasswordScreen: undefined;
   MyLibraryScreen: undefined;
+  HelpCenterScreen: undefined;
+  AboutAppScreen: undefined;
   BookDetail: HomeStackParamList["BookDetail"];
   AuthorProfile: HomeStackParamList["AuthorProfile"];
 };
@@ -142,8 +150,28 @@ function ProfileNavigator() {
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen
+        name="AccountInfoScreen"
+        component={AccountInfoScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="ChangePasswordScreen"
+        component={ChangePasswordScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
         name="MyLibraryScreen"
         component={MyLibraryScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="HelpCenterScreen"
+        component={HelpCenterScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="AboutAppScreen"
+        component={AboutAppScreen}
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen

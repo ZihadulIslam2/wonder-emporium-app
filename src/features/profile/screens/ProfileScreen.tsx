@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -17,6 +18,7 @@ import { authApi } from "@/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ProfileStackParamList } from "@/navigation/MainNavigator";
+import { useLogout } from "@/features/auth";
 
 const menuSections = [
   {
@@ -42,6 +44,20 @@ const menuSections = [
 export function ProfileScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const logoutMutation = useLogout();
+
+  const handleLogout = () => {
+    Alert.alert("Log Out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log Out",
+        style: "destructive",
+        onPress: () => {
+          logoutMutation.mutate(undefined);
+        },
+      },
+    ]);
+  };
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -52,13 +68,13 @@ export function ProfileScreen() {
   });
 
   const profile = profileData || {
-    userProfile: { firstName: "Sarah", lastName: "Jenkins" },
-    email: "sarah.j@example.app",
-    username: "sarahj",
+    userProfile: { firstName: "User", lastName: "" },
+    email: "",
+    username: "user",
   };
 
   const name = profile.userProfile?.firstName
-    ? `${profile.userProfile.firstName} ${profile.userProfile.lastName || ""}`
+    ? `${profile.userProfile.firstName} ${profile.userProfile.lastName || ""}`.trim()
     : profile.username || "User";
 
   return (
@@ -69,8 +85,15 @@ export function ProfileScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#134E4A" />
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Profile</Text>
         <View style={styles.backBtn} />
@@ -113,8 +136,16 @@ export function ProfileScreen() {
                       ]}
                       activeOpacity={0.6}
                       onPress={() => {
-                        if (item.label === "My Library") {
+                        if (item.label === "Account Information") {
+                          navigation.navigate("AccountInfoScreen");
+                        } else if (item.label === "Change Password") {
+                          navigation.navigate("ChangePasswordScreen");
+                        } else if (item.label === "My Library") {
                           navigation.navigate("MyLibraryScreen");
+                        } else if (item.label === "Help Center") {
+                          navigation.navigate("HelpCenterScreen");
+                        } else if (item.label === "About App") {
+                          navigation.navigate("AboutAppScreen");
                         }
                       }}
                     >
@@ -138,8 +169,17 @@ export function ProfileScreen() {
             ))}
           </View>
 
-          <TouchableOpacity style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Log out</Text>
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={handleLogout}
+            disabled={logoutMutation.isPending}
+            activeOpacity={0.7}
+          >
+            {logoutMutation.isPending ? (
+              <ActivityIndicator color="#EF4444" />
+            ) : (
+              <Text style={styles.logoutText}>Log out</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       )}

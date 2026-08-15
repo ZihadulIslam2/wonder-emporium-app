@@ -8,3 +8,7 @@ p3:
 I have given you a refrence of based on the image update the app home page hero section 
 
 p4: 
+make the account info, change password, help center, about info, those workable. make pagens for those and if there is api implement it. in the mobile app settings page    
+
+p5: 
+logout button not working on the settings page or porfile page fix this 

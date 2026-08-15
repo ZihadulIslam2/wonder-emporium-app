@@ -34,6 +34,16 @@ export const authApi = {
 
   getProfile: () => api.get("/auth/me"),
 
+  updateProfile: (payload: {
+    firstName?: string;
+    lastName?: string;
+    location?: string;
+    bio?: string;
+  }) => api.patch("/auth/profile", payload),
+
+  changePassword: (payload: { oldPassword: string; newPassword: string }) =>
+    api.post("/auth/change-password", payload),
+
   getGoogleAuthUrl: () => api.get("/auth/google"),
 
   googleCallbackPost: (payload: SocialAuthDto) =>
