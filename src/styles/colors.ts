@@ -1,6 +1,9 @@
 export const Colors = {
   primary: "#2563EB",
   secondary: "#F59E0B",
+  gold: "#D4A538",
+  navBg: "#FAF9F3",
+  navInactive: "#2D3E35",
   white: "#FFF",
   black: "#111827",
   gray: {

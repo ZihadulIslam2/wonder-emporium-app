@@ -1,7 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/styles/colors";
+import { CustomTabBar } from "./CustomTabBar";
 import { HomeScreen } from "@/features/home/screens/HomeScreen";
 import { BookDetailScreen } from "@/features/home/screens/BookDetailScreen";
 import { BookListScreen } from "@/features/home/screens/BookListScreen";
@@ -164,50 +163,10 @@ function ProfileNavigator() {
 export function MainNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.secondary,
-        tabBarInactiveTintColor: Colors.gray[400],
-        tabBarStyle: {
-          backgroundColor: "#FEFCF6",
-          borderTopWidth: 0,
-          elevation: 0,
-          height: 70,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarIcon: ({ color, focused }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case "Home":
-              iconName = focused ? "home" : "home-outline";
-              break;
-            case "Cart":
-              iconName = focused ? "cart" : "cart-outline";
-              break;
-            case "Explore":
-              iconName = focused ? "grid" : "grid-outline";
-              break;
-            case "Favorites":
-              iconName = focused ? "heart" : "heart-outline";
-              break;
-            case "Profile":
-              iconName = focused ? "person" : "person-outline";
-              break;
-            default:
-              iconName = "home-outline";
-          }
-
-          return (
-            <Ionicons name={iconName} size={focused ? 24 : 22} color={color} />
-          );
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-        },
-      })}
+      }}
     >
       <Tab.Screen
         name="Home"
