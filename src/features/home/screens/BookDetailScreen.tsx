@@ -346,7 +346,24 @@ export function BookDetailScreen({ route, navigation }: Props) {
             of literary achievement, her works have been translated into 28
             languages and have sold millions worldwide.
           </Text>
-          <TouchableOpacity style={styles.viewProfileBtn}>
+          <TouchableOpacity
+            style={styles.viewProfileBtn}
+            onPress={() =>
+              navigation.navigate("AuthorProfile", {
+                authorId:
+                  (
+                    book as unknown as {
+                      authorId?: string;
+                      author?: { id?: string };
+                    }
+                  )?.authorId ||
+                  (book as unknown as { author?: { id?: string } })?.author
+                    ?.id ||
+                  "default-author",
+                authorName: book.author || "Eleanor Whitfield",
+              })
+            }
+          >
             <Text style={styles.viewProfileText}>VIEW AUTHOR PROFILE</Text>
           </TouchableOpacity>
         </View>

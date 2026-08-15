@@ -10,6 +10,9 @@ export const bookApi = {
 
   getById: (id: string) => api.get(`/books/${id}`),
 
+  getByAuthor: (authorId: string, params?: Record<string, unknown>) =>
+    api.get(`/books/author/${authorId}`, { params }),
+
   create: (data: unknown) => api.post("/books", data),
 
   update: (id: string, data: unknown) => api.put(`/books/${id}`, data),

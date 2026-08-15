@@ -6,6 +6,7 @@ import { HomeScreen } from "@/features/home/screens/HomeScreen";
 import { BookDetailScreen } from "@/features/home/screens/BookDetailScreen";
 import { BookListScreen } from "@/features/home/screens/BookListScreen";
 import { AuthorsListScreen } from "@/features/home/screens/AuthorsListScreen";
+import { AuthorProfileScreen } from "@/features/home/screens/AuthorProfileScreen";
 import { CartScreen } from "@/features/cart/screens/CartScreen";
 import { CategoriesScreen } from "@/features/categories/screens/CategoriesScreen";
 import { WishlistScreen } from "@/features/wishlist/screens/WishlistScreen";
@@ -35,12 +36,19 @@ export type HomeStackParamList = {
   AuthorsList: {
     title: string;
   };
+  AuthorProfile: {
+    authorId: string;
+    authorName?: string;
+    authorBio?: string;
+    avatarUrl?: string;
+  };
 };
 
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
   MyLibraryScreen: undefined;
   BookDetail: HomeStackParamList["BookDetail"];
+  AuthorProfile: HomeStackParamList["AuthorProfile"];
 };
 
 type MainTabParamList = {
@@ -79,6 +87,11 @@ function HomeNavigator() {
       <HomeStack.Screen
         name="AuthorsList"
         component={AuthorsListScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="AuthorProfile"
+        component={AuthorProfileScreen}
         options={{ headerShown: false }}
       />
     </HomeStack.Navigator>
@@ -137,6 +150,11 @@ function ProfileNavigator() {
       <ProfileStack.Screen
         name="BookDetail"
         component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="AuthorProfile"
+        component={AuthorProfileScreen}
         options={{ headerShown: false }}
       />
     </ProfileStack.Navigator>

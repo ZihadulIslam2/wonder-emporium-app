@@ -1,0 +1,2 @@
+15 aug 26 p: 1 :
+in the homepage this section Meet Future Founding Authors  in the author list there is a button "view profile" by clicking this it should go to the author profile page im giving you a screenshot of the 

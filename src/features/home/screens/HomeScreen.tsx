@@ -458,7 +458,18 @@ export function HomeScreen() {
           ) : (
             <View style={styles.authorsRow}>
               {foundingAuthors.map((author) => (
-                <View key={author.id} style={styles.authorCard}>
+                <TouchableOpacity
+                  key={author.id}
+                  style={styles.authorCard}
+                  onPress={() =>
+                    navigation.navigate("AuthorProfile", {
+                      authorId: author.id,
+                      authorName: author.name,
+                      avatarUrl: author.avatarUrl,
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
                   <View style={styles.authorAvatar}>
                     {author.avatarUrl ? (
                       <Image
@@ -480,10 +491,20 @@ export function HomeScreen() {
                     <Ionicons name="star" size={12} color={Colors.secondary} />
                     <Text style={styles.authorRatingText}>{author.rating}</Text>
                   </View>
-                  <TouchableOpacity style={styles.profileBtn}>
+                  <TouchableOpacity
+                    style={styles.profileBtn}
+                    onPress={() =>
+                      navigation.navigate("AuthorProfile", {
+                        authorId: author.id,
+                        authorName: author.name,
+                        avatarUrl: author.avatarUrl,
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.profileBtnText}>View Profile</Text>
                   </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               ))}
               {foundingAuthors.length === 0 && (
                 <Text style={styles.emptyText}>No authors found.</Text>

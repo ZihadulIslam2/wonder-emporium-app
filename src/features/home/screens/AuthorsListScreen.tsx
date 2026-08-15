@@ -91,7 +91,18 @@ export function AuthorsListScreen({ route, navigation }: Props) {
             <Text style={styles.emptyText}>No authors found.</Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.authorCard}>
+            <TouchableOpacity
+              style={styles.authorCard}
+              onPress={() =>
+                navigation.navigate("AuthorProfile", {
+                  authorId: item.id,
+                  authorName: item.name,
+                  authorBio: item.bio,
+                  avatarUrl: item.avatarUrl,
+                })
+              }
+              activeOpacity={0.8}
+            >
               <View style={styles.avatarContainer}>
                 {item.avatarUrl ? (
                   <Image
@@ -116,7 +127,7 @@ export function AuthorsListScreen({ route, navigation }: Props) {
                   </View>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
