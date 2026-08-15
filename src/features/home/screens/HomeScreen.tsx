@@ -19,7 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
 import { useQuery } from "@tanstack/react-query";
-import { bookApi, authorApi } from "@/api";
+import { bookApi } from "@/api";
 import { useState } from "react";
 import { useWishlistStore } from "@/store/wishlist.store";
 
@@ -68,26 +68,6 @@ interface FormattedBook {
   cover?: string;
   files?: Array<{ type: string; url: string }>;
   [key: string]: unknown;
-}
-
-interface AuthorApiItem {
-  id: string;
-  username?: string;
-  avatarUrl?: string;
-  bookCount?: number;
-  profile?: {
-    firstName?: string;
-    lastName?: string;
-    avatarUrl?: string;
-  };
-}
-
-interface FormattedAuthor {
-  id: string;
-  name: string;
-  avatarUrl?: string;
-  books: string;
-  rating: string;
 }
 
 function BookCard(props: BookCardProps) {
@@ -209,14 +189,6 @@ export function HomeScreen() {
     },
   });
 
-  const { data: authorsData, isLoading: isAuthorsLoading } = useQuery({
-    queryKey: ["authors", "founding"],
-    queryFn: async () => {
-      const res = await authorApi.getFoundingAuthors({ limit: 4 });
-      return res.data;
-    },
-  });
-
   const categories = [
     "All",
     ...(categoriesData?.data?.categories?.map(
@@ -244,23 +216,6 @@ export function HomeScreen() {
         b.title?.toLowerCase().includes(q) ||
         b.author?.toLowerCase().includes(q)
       );
-    });
-
-  const foundingAuthors: FormattedAuthor[] = (authorsData?.data?.authors || [])
-    .map((a: AuthorApiItem) => ({
-      id: a.id,
-      name: a.profile?.firstName
-        ? `${a.profile.firstName} ${a.profile.lastName}`
-        : a.username || "Author",
-      avatarUrl: a.profile?.avatarUrl || a.avatarUrl,
-      books: a.bookCount
-        ? `${a.bookCount} Book${a.bookCount > 1 ? "s" : ""}`
-        : "0 Books",
-      rating: "4.9", // Mock
-    }))
-    .filter((a: FormattedAuthor) => {
-      if (!searchQuery.trim()) return true;
-      return a.name?.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
   const handleBookPress = (book: HomeStackParamList["BookDetail"]["book"]) => {
@@ -449,77 +404,6 @@ export function HomeScreen() {
             </View>
           </>
         )}
-
-        <View style={styles.contentSection}>
-          <SectionHeader
-            title="Meet Future Founding Authors"
-            onViewAll={() =>
-              navigation.navigate("AuthorsList", {
-                title: "Future Founding Authors",
-              })
-            }
-          />
-          {isAuthorsLoading ? (
-            <View style={{ padding: Spacing.md, alignItems: "center" }}>
-              <ActivityIndicator size="small" color={Colors.secondary} />
-            </View>
-          ) : (
-            <View style={styles.authorsRow}>
-              {foundingAuthors.map((author) => (
-                <TouchableOpacity
-                  key={author.id}
-                  style={styles.authorCard}
-                  onPress={() =>
-                    navigation.navigate("AuthorProfile", {
-                      authorId: author.id,
-                      authorName: author.name,
-                      avatarUrl: author.avatarUrl,
-                    })
-                  }
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.authorAvatar}>
-                    {author.avatarUrl ? (
-                      <Image
-                        source={{ uri: author.avatarUrl }}
-                        style={styles.authorAvatarImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <Ionicons
-                        name="person"
-                        size={28}
-                        color={Colors.secondary}
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.authorName}>{author.name}</Text>
-                  <Text style={styles.authorBooks}>{author.books}</Text>
-                  <View style={styles.authorRating}>
-                    <Ionicons name="star" size={12} color={Colors.secondary} />
-                    <Text style={styles.authorRatingText}>{author.rating}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.profileBtn}
-                    onPress={() =>
-                      navigation.navigate("AuthorProfile", {
-                        authorId: author.id,
-                        authorName: author.name,
-                        avatarUrl: author.avatarUrl,
-                      })
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.profileBtnText}>View Profile</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              ))}
-              {foundingAuthors.length === 0 && (
-                <Text style={styles.emptyText}>No authors found.</Text>
-              )}
-            </View>
-          )}
-        </View>
       </ScrollView>
     </ImageBackground>
   );
@@ -758,71 +642,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: Colors.white,
-  },
-  authorsRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  authorCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: Spacing.md,
-    alignItems: "center",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  authorAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#FEF3C7",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.sm,
-    overflow: "hidden",
-  },
-  authorAvatarImage: {
-    width: "100%",
-    height: "100%",
-  },
-  authorName: {
-    ...Typography.body,
-    fontWeight: "600",
-    color: Colors.black,
-  },
-  authorBooks: {
-    ...Typography.caption,
-    color: Colors.gray[500],
-    marginTop: 2,
-  },
-  authorRating: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: Spacing.xs,
-  },
-  authorRatingText: {
-    ...Typography.caption,
-    fontWeight: "600",
-    color: Colors.secondary,
-  },
-  profileBtn: {
-    backgroundColor: "#FEF3C7",
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginTop: Spacing.sm,
-    width: "100%",
-    alignItems: "center",
-  },
-  profileBtnText: {
-    ...Typography.caption,
-    fontWeight: "600",
-    color: Colors.black,
   },
   emptyText: {
     ...Typography.bodySmall,

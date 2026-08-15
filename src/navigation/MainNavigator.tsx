@@ -47,6 +47,12 @@ export type HomeStackParamList = {
   };
 };
 
+export type CartStackParamList = {
+  CartScreen: undefined;
+  AuthorsList: HomeStackParamList["AuthorsList"];
+  AuthorProfile: HomeStackParamList["AuthorProfile"];
+};
+
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
   AccountInfoScreen: undefined;
@@ -68,7 +74,7 @@ type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
-const CartStack = createNativeStackNavigator();
+const CartStack = createNativeStackNavigator<CartStackParamList>();
 const ExploreStack = createNativeStackNavigator();
 const FavoritesStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
@@ -111,6 +117,16 @@ function CartNavigator() {
       <CartStack.Screen
         name="CartScreen"
         component={CartScreen}
+        options={{ headerShown: false }}
+      />
+      <CartStack.Screen
+        name="AuthorsList"
+        component={AuthorsListScreen}
+        options={{ headerShown: false }}
+      />
+      <CartStack.Screen
+        name="AuthorProfile"
+        component={AuthorProfileScreen}
         options={{ headerShown: false }}
       />
     </CartStack.Navigator>
