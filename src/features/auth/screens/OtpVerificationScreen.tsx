@@ -18,7 +18,7 @@ import { useVerifyEmail } from "../hooks/useVerifyEmail";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "OtpVerification">;
 
-const OTP_LENGTH = 4;
+const OTP_LENGTH = 6;
 
 export function OtpVerificationScreen({ route, navigation }: Props) {
   const { email, mode } = route.params;
@@ -34,7 +34,7 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
         { text: "OK", onPress: () => navigation.navigate("Login") },
       ]);
     }
-  }, [verifyEmailMutation.isSuccess]);
+  }, [verifyEmailMutation.isSuccess, navigation]);
 
   useEffect(() => {
     if (verifyEmailMutation.isError) {
@@ -46,17 +46,35 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
         )?.response?.data?.message || "Verification failed. Please try again.";
       Alert.alert("Error", message);
     }
-  }, [verifyEmailMutation.isError]);
+  }, [verifyEmailMutation.isError, verifyEmailMutation.error]);
 
   const handleChange = (text: string, index: number) => {
-    const digit = text.replace(/[^0-9]/g, "");
-    if (digit.length > 1) return;
+    const clean = text.replace(/[^0-9]/g, "");
+
+    if (!clean) {
+      const newOtp = [...otp];
+      newOtp[index] = "";
+      setOtp(newOtp);
+      return;
+    }
+
+    // Handle full OTP paste (e.g. 6 digits copied from email)
+    if (clean.length > 1) {
+      const newOtp = [...otp];
+      for (let i = 0; i < OTP_LENGTH; i++) {
+        newOtp[i] = clean[i] || "";
+      }
+      setOtp(newOtp);
+      const targetFocus = Math.min(clean.length, OTP_LENGTH) - 1;
+      inputRefs.current[targetFocus]?.focus();
+      return;
+    }
 
     const newOtp = [...otp];
-    newOtp[index] = digit;
+    newOtp[index] = clean;
     setOtp(newOtp);
 
-    if (digit && index < OTP_LENGTH - 1) {
+    if (clean && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -84,7 +102,7 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
     <AuthLayout>
       <Text style={styles.title}>Verify Your Account</Text>
       <Text style={styles.subtitle}>
-        Enter the verification code sent to your email.
+        Enter the 6-digit verification code sent to your email.
       </Text>
 
       <View style={styles.otpContainer}>
@@ -104,7 +122,8 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
               handleKeyPress(nativeEvent.key, index)
             }
             keyboardType="number-pad"
-            maxLength={1}
+            maxLength={6}
+            selectTextOnFocus
           />
         ))}
       </View>
@@ -143,17 +162,17 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: Spacing.md,
+    gap: 8,
     marginBottom: Spacing.lg,
   },
   otpBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
+    width: 48,
+    height: 56,
+    borderRadius: 10,
     borderWidth: 1.5,
     textAlign: "center",
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
     color: Colors.black,
   },
   otpBoxFilled: {

@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,15 +8,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Alert,
+  Modal,
+  SafeAreaView,
 } from "react-native";
+import { WebView, WebViewNavigation } from "react-native-webview";
 import { Ionicons } from "@expo/vector-icons";
+
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
 import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi, bookApi, authorApi } from "@/api";
-import { useMemo } from "react";
+import { cartApi, bookApi, authorApi, ordersApi } from "@/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { CartStackParamList } from "@/navigation/MainNavigator";
@@ -165,6 +170,108 @@ export function CartScreen() {
     });
   }, [cartItems, booksData]);
 
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWebViewLoading, setIsWebViewLoading] = useState(true);
+
+  const handleCheckout = async () => {
+    if (!cartItems.length) return;
+
+    try {
+      setIsCheckingOut(true);
+
+      const checkoutItems = cartItems
+        .map((item) => {
+          let fId = item.formatId;
+          if (!fId) {
+            const book = booksData?.find(
+              (b: BookApiItem) => b.id === item.bookId,
+            );
+            fId = book?.formats?.[0]?.id;
+          }
+          return {
+            formatId: fId || "",
+            quantity: item.quantity || 1,
+          };
+        })
+        .filter((item) => Boolean(item.formatId));
+
+      if (!checkoutItems.length) {
+        Alert.alert(
+          "Checkout Error",
+          "Could not identify the format of items in your cart. Please try re-adding them.",
+        );
+        return;
+      }
+
+      const res = await ordersApi.createCheckout({
+        items: checkoutItems,
+        successUrl: "https://wonder-emporium.onrender.com/checkout/success",
+        cancelUrl: "https://wonder-emporium.onrender.com/checkout/cancel",
+      });
+
+      const url =
+        (
+          res.data as unknown as {
+            data?: { checkoutUrl?: string };
+            checkoutUrl?: string;
+          }
+        )?.data?.checkoutUrl ||
+        (res.data as unknown as { checkoutUrl?: string })?.checkoutUrl;
+
+      if (!url) {
+        Alert.alert("Checkout Error", "Could not create a checkout session.");
+        return;
+      }
+
+      setCheckoutUrl(url);
+      setIsWebViewLoading(true);
+      setIsModalOpen(true);
+    } catch (error: unknown) {
+      const err = error as Error & {
+        response?: { data?: { message?: string | string[] } };
+      };
+      const rawMessage = err?.response?.data?.message || err?.message;
+      const message = Array.isArray(rawMessage)
+        ? rawMessage.join("\n")
+        : typeof rawMessage === "string"
+          ? rawMessage
+          : "An error occurred while processing checkout.";
+      Alert.alert("Checkout Error", message);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCheckoutUrl(null);
+  };
+
+  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+    const { url } = navState;
+
+    if (url.includes("/checkout/success") || url.includes("status=success")) {
+      setIsModalOpen(false);
+      setCheckoutUrl(null);
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+      Alert.alert(
+        "Order Placed",
+        "Your order has been completed successfully! You can track your books in your library or profile.",
+      );
+    } else if (
+      url.includes("/checkout/cancel") ||
+      url.includes("status=cancel")
+    ) {
+      setIsModalOpen(false);
+      setCheckoutUrl(null);
+    }
+  };
+
   const subtotal = enrichedItems.reduce(
     (sum: number, item: EnrichedCartItem) => sum + item.price * item.quantity,
     0,
@@ -181,7 +288,11 @@ export function CartScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
           <Ionicons name="arrow-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Cart Page</Text>
@@ -254,11 +365,18 @@ export function CartScreen() {
           <TouchableOpacity
             style={[
               styles.checkoutBtn,
-              enrichedItems.length === 0 && styles.disabledBtn,
+              (enrichedItems.length === 0 || isCheckingOut) &&
+                styles.disabledBtn,
             ]}
-            disabled={enrichedItems.length === 0}
+            disabled={enrichedItems.length === 0 || isCheckingOut}
+            onPress={handleCheckout}
+            activeOpacity={0.8}
           >
-            <Text style={styles.checkoutText}>Checkout Now</Text>
+            {isCheckingOut ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <Text style={styles.checkoutText}>Checkout Now</Text>
+            )}
           </TouchableOpacity>
 
           {/* Meet Future Founding Authors Section */}
@@ -350,6 +468,50 @@ export function CartScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* In-App Native Stripe Checkout Modal */}
+      <Modal
+        visible={isModalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseModal}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={handleCloseModal}
+              style={styles.modalCloseBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={24} color={Colors.black} />
+            </TouchableOpacity>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name="lock-closed" size={16} color={Colors.secondary} />
+              <Text style={styles.modalHeaderTitle}>Secure Checkout</Text>
+            </View>
+            <View style={styles.modalCloseBtn} />
+          </View>
+
+          {isWebViewLoading && (
+            <View style={styles.webViewLoader}>
+              <ActivityIndicator size="large" color={Colors.secondary} />
+              <Text style={styles.loaderText}>Loading Payment Portal...</Text>
+            </View>
+          )}
+
+          {checkoutUrl && (
+            <WebView
+              source={{ uri: checkoutUrl }}
+              onLoadEnd={() => setIsWebViewLoading(false)}
+              onNavigationStateChange={handleNavigationStateChange}
+              style={styles.webView}
+              javaScriptEnabled
+              domStorageEnabled
+              startInLoadingState={false}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
     </ImageBackground>
   );
 }
@@ -555,5 +717,57 @@ const styles = StyleSheet.create({
     color: Colors.gray[500],
     padding: Spacing.md,
     fontStyle: "italic",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray[200],
+    backgroundColor: Colors.white,
+  },
+  modalCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  modalHeaderTitle: {
+    ...Typography.h3,
+    color: Colors.black,
+    fontWeight: "700",
+  },
+  webViewLoader: {
+    position: "absolute",
+    top: 60,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    gap: Spacing.md,
+  },
+  loaderText: {
+    ...Typography.bodySmall,
+    color: Colors.gray[600],
+    fontWeight: "600",
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: Colors.white,
   },
 });

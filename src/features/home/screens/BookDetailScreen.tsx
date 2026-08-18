@@ -17,8 +17,8 @@ import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi } from "@/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { cartApi, libraryApi, LibraryItem } from "@/api";
 import { useWishlistStore } from "@/store/wishlist.store";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "BookDetail">;
@@ -155,6 +155,25 @@ export function BookDetailScreen({ route, navigation }: Props) {
     ? `$${selectedFormatObj.listPrice.toFixed(2)}`
     : book.price || "$24.99";
 
+  const { data: libraryRes } = useQuery({
+    queryKey: ["library"],
+    queryFn: async () => {
+      const res = await libraryApi.getLibrary();
+      return res.data;
+    },
+  });
+
+  const apiLibraryItems: LibraryItem[] = Array.isArray(libraryRes)
+    ? libraryRes
+    : (libraryRes as unknown as { data?: LibraryItem[] })?.data || [];
+
+  const ownedLibraryItem = apiLibraryItems.find(
+    (item) => item.book?.id === book.id,
+  );
+  const isOwned = Boolean(ownedLibraryItem);
+
+  const isAudioSelected = selectedFormat.toLowerCase().includes("audio");
+
   return (
     <ImageBackground
       source={bgImage}
@@ -162,30 +181,34 @@ export function BookDetailScreen({ route, navigation }: Props) {
       imageStyle={styles.backgroundImage}
     >
       <View style={styles.overlay} />
+
+      {/* Top Navigation */}
       <View style={styles.topBar}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
           style={styles.backBtn}
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Book Details</Text>
         <TouchableOpacity
-          onPress={() => toggleWishlist(book)}
           style={styles.backBtn}
+          onPress={() => toggleWishlist(book)}
         >
           <Ionicons
             name={isWishlisted ? "heart" : "heart-outline"}
-            size={24}
+            size={22}
             color={isWishlisted ? "#EF4444" : Colors.black}
           />
         </TouchableOpacity>
       </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Book Hero */}
         <View style={styles.heroSection}>
           {coverUrl ? (
             <Image
@@ -234,30 +257,53 @@ export function BookDetailScreen({ route, navigation }: Props) {
             <Text style={styles.currentPrice}>{displayPrice}</Text>
           </View>
 
-          <View style={styles.actionRow}>
+          {isOwned ? (
             <TouchableOpacity
-              style={styles.addToCartBtn}
-              onPress={handleAddToCart}
-              disabled={addToCartMutation.isPending}
+              style={styles.listenNowBtn}
+              onPress={() => {
+                navigation.getParent()?.navigate("Profile", {
+                  screen: "MyLibraryScreen",
+                });
+              }}
+              activeOpacity={0.8}
             >
-              {addToCartMutation.isPending ? (
-                <ActivityIndicator color={Colors.secondary} size="small" />
-              ) : (
-                <Text style={styles.addToCartText}>ADD TO CART</Text>
-              )}
+              <Ionicons
+                name={isAudioSelected ? "headset" : "book-outline"}
+                size={20}
+                color={Colors.white}
+              />
+              <Text style={styles.listenNowText}>
+                {isAudioSelected
+                  ? "LISTEN IN MY LIBRARY"
+                  : "READ IN MY LIBRARY"}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buyNowBtn}
-              onPress={handleBuyNow}
-              disabled={addToCartMutation.isPending}
-            >
-              {addToCartMutation.isPending ? (
-                <ActivityIndicator color={Colors.white} size="small" />
-              ) : (
-                <Text style={styles.buyNowText}>BUY NOW</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          ) : (
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.addToCartBtn}
+                onPress={handleAddToCart}
+                disabled={addToCartMutation.isPending}
+              >
+                {addToCartMutation.isPending ? (
+                  <ActivityIndicator color={Colors.secondary} size="small" />
+                ) : (
+                  <Text style={styles.addToCartText}>ADD TO CART</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.buyNowBtn}
+                onPress={handleBuyNow}
+                disabled={addToCartMutation.isPending}
+              >
+                {addToCartMutation.isPending ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.buyNowText}>BUY NOW</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -541,6 +587,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buyNowText: { ...Typography.button, color: Colors.white, fontWeight: "700" },
+  listenNowBtn: {
+    backgroundColor: Colors.secondary,
+    borderRadius: 24,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginTop: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  listenNowText: {
+    ...Typography.button,
+    color: Colors.white,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
 
   section: { paddingHorizontal: Spacing.lg, marginTop: Spacing.xl },
   sectionTitle: { ...Typography.h3, color: Colors.black },

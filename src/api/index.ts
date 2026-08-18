@@ -5,8 +5,15 @@ export { cartApi } from "./cart.api";
 export { authorApi } from "./author.api";
 export { wishlistApi } from "./wishlist.api";
 export { libraryApi } from "./library.api";
+export { ordersApi } from "./order.api";
 export type {
   LibraryItem,
   LibraryBook,
   LibraryAccessResponse,
 } from "./library.api";
+export type {
+  CheckoutItemPayload,
+  CreateCheckoutPayload,
+  CheckoutResponse,
+  OrderHistoryItem,
+} from "./order.api";

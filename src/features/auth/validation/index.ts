@@ -33,7 +33,7 @@ export const resetPasswordSchema = z
   });
 
 export const otpSchema = z.object({
-  otp: z.string().length(4, "Code must be 4 digits"),
+  otp: z.string().length(6, "Code must be 6 digits"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

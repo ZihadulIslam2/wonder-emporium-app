@@ -38,12 +38,52 @@ export function LoginScreen() {
 
   useEffect(() => {
     if (loginMutation.isError) {
-      const message =
-        (loginMutation.error as { response?: { data?: { message?: string } } })
-          ?.response?.data?.message || "Login failed. Please try again.";
-      Alert.alert("Error", message);
+      const err = loginMutation.error as Error & {
+        response?: { data?: { message?: string }; status?: number };
+        code?: string;
+      };
+      const serverMessage = err?.response?.data?.message;
+
+      let message = "Login failed. Please try again.";
+
+      if (serverMessage) {
+        message = serverMessage;
+      } else if (
+        err?.code === "ERR_NETWORK" ||
+        err?.message?.includes("Network Error")
+      ) {
+        message =
+          "Network Error: Unable to connect to the backend server. If using Android Studio Emulator, ensure your backend is accessible.";
+      } else if (err?.message) {
+        message = err.message;
+      }
+
+      if (
+        message.toLowerCase().includes("not verified") ||
+        message.toLowerCase().includes("unverified")
+      ) {
+        Alert.alert(
+          "Email Not Verified",
+          "Your email address is not verified yet. Would you like to verify it now?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Verify",
+              onPress: () => {
+                const enteredEmail = control._formValues?.email || "";
+                navigation.navigate("OtpVerification", {
+                  email: enteredEmail,
+                  mode: "verifyEmail",
+                });
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert("Login Failed", message);
+      }
     }
-  }, [loginMutation.isError]);
+  }, [loginMutation.isError, loginMutation.error, navigation, control]);
 
   return (
     <AuthLayout>
