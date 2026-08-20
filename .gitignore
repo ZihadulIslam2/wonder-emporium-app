@@ -42,3 +42,8 @@ example
 /ios
 /android
 husky/.gitignore
+
+# builds & binaries
+*.apk
+*.aab
+
