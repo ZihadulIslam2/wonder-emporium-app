@@ -10,8 +10,14 @@ export interface LibraryBook {
   author?:
     | string
     | {
+        id?: string;
         username?: string;
-        profile?: { firstName?: string; lastName?: string };
+        profile?: { firstName?: string; lastName?: string; avatarUrl?: string };
+        userProfile?: {
+          firstName?: string;
+          lastName?: string;
+          avatarUrl?: string;
+        };
       };
   rating?: string | number;
 }

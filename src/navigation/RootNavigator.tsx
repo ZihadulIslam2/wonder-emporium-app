@@ -3,6 +3,7 @@ import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useAuthStore, useAppStore } from "@/store";
 import { authService } from "@/services/auth.service";
+import { authApi } from "@/api";
 import { AuthNavigator } from "./AuthNavigator";
 import { MainNavigator } from "./MainNavigator";
 import { OnboardingScreen } from "@/features/onboarding/screens/OnboardingScreen";
@@ -18,20 +19,48 @@ export function RootNavigator() {
   );
 
   useEffect(() => {
+    let isMounted = true;
+
     async function init() {
       try {
         const token = await authService.getAccessToken();
         if (token) {
-          const response = await authService.refreshToken();
-          setUser(response.user);
+          try {
+            const profileRes = await authApi.getProfile();
+            const userData = profileRes?.data?.data;
+            if (isMounted && userData) {
+              setUser(userData);
+            }
+          } catch {
+            // Token might be expired, try refreshing
+            try {
+              const refreshData = await authService.refreshToken();
+              if (refreshData?.accessToken) {
+                const profileRes = await authApi.getProfile();
+                const userData = profileRes?.data?.data;
+                if (isMounted && userData) {
+                  setUser(userData);
+                }
+              }
+            } catch {
+              await authService.logout().catch(() => {});
+            }
+          }
         }
       } catch {
-        await authService.logout();
+        await authService.logout().catch(() => {});
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
+
     init();
+
+    return () => {
+      isMounted = false;
+    };
   }, [setUser, setLoading]);
 
   if (isLoading) {

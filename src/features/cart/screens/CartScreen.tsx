@@ -172,6 +172,7 @@ export function CartScreen() {
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWebViewLoading, setIsWebViewLoading] = useState(true);
 
@@ -207,18 +208,26 @@ export function CartScreen() {
 
       const res = await ordersApi.createCheckout({
         items: checkoutItems,
-        successUrl: "https://wonder-emporium.onrender.com/checkout/success",
+        successUrl:
+          "https://wonder-emporium.onrender.com/checkout/success?session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: "https://wonder-emporium.onrender.com/checkout/cancel",
       });
 
-      const url =
+      const resData =
         (
           res.data as unknown as {
-            data?: { checkoutUrl?: string };
+            data?: { checkoutUrl?: string; sessionId?: string };
             checkoutUrl?: string;
+            sessionId?: string;
           }
-        )?.data?.checkoutUrl ||
-        (res.data as unknown as { checkoutUrl?: string })?.checkoutUrl;
+        )?.data ||
+        (res.data as unknown as {
+          checkoutUrl?: string;
+          sessionId?: string;
+        });
+
+      const url = resData?.checkoutUrl;
+      const sessionId = resData?.sessionId;
 
       if (!url) {
         Alert.alert("Checkout Error", "Could not create a checkout session.");
@@ -226,6 +235,7 @@ export function CartScreen() {
       }
 
       setCheckoutUrl(url);
+      setCurrentSessionId(sessionId || null);
       setIsWebViewLoading(true);
       setIsModalOpen(true);
     } catch (error: unknown) {
@@ -247,21 +257,70 @@ export function CartScreen() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCheckoutUrl(null);
+    setCurrentSessionId(null);
   };
 
-  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+  const handleNavigationStateChange = async (navState: WebViewNavigation) => {
     const { url } = navState;
 
     if (url.includes("/checkout/success") || url.includes("status=success")) {
       setIsModalOpen(false);
       setCheckoutUrl(null);
+
+      // Extract session_id from URL query if returned by Stripe
+      let sid = currentSessionId;
+      try {
+        const match = url.match(/[?&]session_id=([^&]+)/);
+        if (match && match[1] && !match[1].startsWith("{")) {
+          sid = match[1];
+        }
+      } catch {
+        // ignore match error
+      }
+      setCurrentSessionId(null);
+
+      // 1. Confirm session with backend to mark order COMPLETED and populate library
+      if (sid) {
+        try {
+          await ordersApi.confirmCheckoutSession(sid);
+        } catch {
+          // Ignore confirmation failure (can be resolved asynchronously)
+        }
+      }
+
+      // 2. Explicitly clear user's cart in client API
+      try {
+        await cartApi.clearCart();
+      } catch {
+        // Ignore clear cart failure
+      }
+
+      // 3. Invalidate caches
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart-books"] });
       queryClient.invalidateQueries({ queryKey: ["library"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
 
       Alert.alert(
         "Order Placed",
-        "Your order has been completed successfully! You can track your books in your library or profile.",
+        "Your order has been completed successfully! You can find your purchased books in your library.",
+        [
+          {
+            text: "View My Library",
+            onPress: () => {
+              navigation
+                .getParent<
+                  NativeStackNavigationProp<{
+                    Profile: { screen?: string };
+                  }>
+                >()
+                ?.navigate("Profile", {
+                  screen: "MyLibraryScreen",
+                });
+            },
+          },
+          { text: "OK", style: "cancel" },
+        ],
       );
     } else if (
       url.includes("/checkout/cancel") ||
@@ -269,6 +328,7 @@ export function CartScreen() {
     ) {
       setIsModalOpen(false);
       setCheckoutUrl(null);
+      setCurrentSessionId(null);
     }
   };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -44,7 +45,12 @@ export function MyLibraryScreen() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
   // Fetch Library items from backend API
-  const { data: libraryRes, isLoading: isLibraryLoading } = useQuery({
+  const {
+    data: libraryRes,
+    isLoading: isLibraryLoading,
+    refetch: refetchLibrary,
+    isRefetching: isLibraryRefetching,
+  } = useQuery({
     queryKey: ["library"],
     queryFn: async () => {
       const res = await libraryApi.getLibrary();
@@ -61,14 +67,33 @@ export function MyLibraryScreen() {
     },
   });
 
-  // Extract array of LibraryItem from response
-  const apiLibraryItems: LibraryItem[] = Array.isArray(libraryRes)
-    ? libraryRes
-    : (libraryRes as unknown as { data?: LibraryItem[] })?.data || [];
+  // Extract array of LibraryItem from response safely
+  const apiLibraryItems: LibraryItem[] = useMemo(() => {
+    if (!libraryRes) return [];
+    if (Array.isArray(libraryRes)) return libraryRes;
+    const resUnknown = libraryRes as unknown;
+    if (
+      typeof resUnknown === "object" &&
+      resUnknown !== null &&
+      "data" in resUnknown &&
+      Array.isArray((resUnknown as { data: LibraryItem[] }).data)
+    ) {
+      return (resUnknown as { data: LibraryItem[] }).data;
+    }
+    if (
+      typeof resUnknown === "object" &&
+      resUnknown !== null &&
+      "items" in resUnknown &&
+      Array.isArray((resUnknown as { items: LibraryItem[] }).items)
+    ) {
+      return (resUnknown as { items: LibraryItem[] }).items;
+    }
+    return [];
+  }, [libraryRes]);
 
   // Format Library items from API response
-  const libraryBooks: FormattedLibraryBook[] = apiLibraryItems.map(
-    (item, idx) => {
+  const libraryBooks: FormattedLibraryBook[] = useMemo(() => {
+    return apiLibraryItems.map((item, idx) => {
       const b = item.book;
       const formatType = item.format?.type || "EBOOK";
       const progressVal = item.progress ?? 0;
@@ -79,16 +104,27 @@ export function MyLibraryScreen() {
           ? "READING"
           : "NOT_STARTED";
 
+      const author = b?.author;
+      let authorName = "Unknown Author";
+      if (typeof author === "string") {
+        authorName = author;
+      } else if (author && typeof author === "object") {
+        if (author.userProfile?.firstName) {
+          authorName =
+            `${author.userProfile.firstName} ${author.userProfile.lastName || ""}`.trim();
+        } else if (author.profile?.firstName) {
+          authorName =
+            `${author.profile.firstName} ${author.profile.lastName || ""}`.trim();
+        } else if (author.username) {
+          authorName = author.username;
+        }
+      }
+
       return {
         id: b?.id || `item-${idx}`,
         orderItemId: item.orderItemId,
         title: b?.title || "Untitled Book",
-        author:
-          typeof b?.author === "string"
-            ? b.author
-            : b?.author?.profile?.firstName
-              ? `${b.author.profile.firstName} ${b.author.profile.lastName || ""}`.trim()
-              : b?.author?.username || "Unknown Author",
+        author: authorName,
         rating:
           typeof b?.rating === "number"
             ? b.rating.toFixed(1)
@@ -102,8 +138,8 @@ export function MyLibraryScreen() {
           b?.cover ||
           "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
       };
-    },
-  );
+    });
+  }, [apiLibraryItems]);
 
   // Filter books based on active tab
   const filteredMyBooks = libraryBooks.filter((book) => {
@@ -238,6 +274,14 @@ export function MyLibraryScreen() {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLibraryRefetching}
+              onRefresh={refetchLibrary}
+              tintColor={Colors.secondary}
+              colors={[Colors.secondary]}
+            />
+          }
         >
           {/* Section 1: Recent Purchases */}
           <View style={styles.section}>

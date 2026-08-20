@@ -13,6 +13,7 @@ export interface CreateCheckoutPayload {
 
 export interface CheckoutResponse {
   checkoutUrl: string;
+  sessionId?: string;
 }
 
 export interface OrderItem {
@@ -40,6 +41,12 @@ export interface OrderHistoryItem {
 export const ordersApi = {
   createCheckout: (payload: CreateCheckoutPayload) =>
     api.post<CheckoutResponse>("/orders/checkout", payload),
+
+  confirmCheckoutSession: (sessionId: string) =>
+    api.post<{ success: boolean; paymentStatus: string; status: string }>(
+      "/orders/confirm-session",
+      { sessionId },
+    ),
 
   getOrderHistory: (params?: {
     status?: string;

@@ -99,6 +99,8 @@ export const authService = {
       if (refreshToken) {
         await authApi.logout({ refreshToken });
       }
+    } catch {
+      // Network/server errors during logout should not prevent local cleanup
     } finally {
       await storage.remove(Constants.tokenKey);
       await storage.remove(Constants.refreshTokenKey);
@@ -108,6 +110,8 @@ export const authService = {
   logoutAll: async (userId: string) => {
     try {
       await authApi.logoutAll({ userId });
+    } catch {
+      // Network/server errors during logout should not prevent local cleanup
     } finally {
       await storage.remove(Constants.tokenKey);
       await storage.remove(Constants.refreshTokenKey);

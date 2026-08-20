@@ -5,6 +5,9 @@ const prettier = require("eslint-config-prettier");
 const unusedImports = require("eslint-plugin-unused-imports");
 
 module.exports = [
+  {
+    ignores: ["node_modules/", "dist/", "build/", ".expo/", "ios/", "android/", "eslint.config.js"],
+  },
   js.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],
@@ -31,9 +34,6 @@ module.exports = [
       "unused-imports/no-unused-imports": "warn",
       "no-console": "warn",
     },
-  },
-  {
-    ignores: ["node_modules/", "dist/", "build/", ".expo/", "ios/", "android/"],
   },
   prettier,
 ];
