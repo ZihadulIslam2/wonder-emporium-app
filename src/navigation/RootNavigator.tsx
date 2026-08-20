@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import { useAuthStore, useAppStore } from "@/store";
+import { useAuthStore, useAppStore, useReaderStore } from "@/store";
 import { authService } from "@/services/auth.service";
 import { authApi } from "@/api";
 import { AuthNavigator } from "./AuthNavigator";
@@ -23,6 +23,10 @@ export function RootNavigator() {
 
     async function init() {
       try {
+        useReaderStore
+          .getState()
+          .initProgress()
+          .catch(() => {});
         const token = await authService.getAccessToken();
         if (token) {
           try {

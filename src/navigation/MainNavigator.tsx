@@ -15,6 +15,17 @@ import { AccountInfoScreen } from "@/features/profile/screens/AccountInfoScreen"
 import { ChangePasswordScreen } from "@/features/profile/screens/ChangePasswordScreen";
 import { HelpCenterScreen } from "@/features/profile/screens/HelpCenterScreen";
 import { AboutAppScreen } from "@/features/profile/screens/AboutAppScreen";
+import { AudiobookPlayerScreen } from "@/features/profile/screens/AudiobookPlayerScreen";
+import { PdfReaderScreen } from "@/features/profile/screens/PdfReaderScreen";
+
+export interface BookReaderParams {
+  bookId: string;
+  orderItemId?: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  initialProgress?: number;
+}
 
 export type HomeStackParamList = {
   HomeScreen: undefined;
@@ -45,6 +56,8 @@ export type HomeStackParamList = {
     authorBio?: string;
     avatarUrl?: string;
   };
+  AudiobookPlayer: BookReaderParams;
+  PdfReader: BookReaderParams;
 };
 
 export type CartStackParamList = {
@@ -62,6 +75,8 @@ export type ProfileStackParamList = {
   AboutAppScreen: undefined;
   BookDetail: HomeStackParamList["BookDetail"];
   AuthorProfile: HomeStackParamList["AuthorProfile"];
+  AudiobookPlayer: BookReaderParams;
+  PdfReader: BookReaderParams;
 };
 
 type MainTabParamList = {
@@ -105,6 +120,16 @@ function HomeNavigator() {
       <HomeStack.Screen
         name="AuthorProfile"
         component={AuthorProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="AudiobookPlayer"
+        component={AudiobookPlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="PdfReader"
+        component={PdfReaderScreen}
         options={{ headerShown: false }}
       />
     </HomeStack.Navigator>
@@ -198,6 +223,16 @@ function ProfileNavigator() {
       <ProfileStack.Screen
         name="AuthorProfile"
         component={AuthorProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="AudiobookPlayer"
+        component={AudiobookPlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="PdfReader"
+        component={PdfReaderScreen}
         options={{ headerShown: false }}
       />
     </ProfileStack.Navigator>

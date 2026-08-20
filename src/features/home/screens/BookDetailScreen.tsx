@@ -261,9 +261,23 @@ export function BookDetailScreen({ route, navigation }: Props) {
             <TouchableOpacity
               style={styles.listenNowBtn}
               onPress={() => {
-                navigation.getParent()?.navigate("Profile", {
-                  screen: "MyLibraryScreen",
-                });
+                if (isAudioSelected) {
+                  navigation.navigate("AudiobookPlayer", {
+                    bookId: book.id,
+                    orderItemId: ownedLibraryItem?.orderItemId,
+                    title: book.title,
+                    author: book.author,
+                    coverUrl: coverUrl,
+                  });
+                } else {
+                  navigation.navigate("PdfReader", {
+                    bookId: book.id,
+                    orderItemId: ownedLibraryItem?.orderItemId,
+                    title: book.title,
+                    author: book.author,
+                    coverUrl: coverUrl,
+                  });
+                }
               }}
               activeOpacity={0.8}
             >
@@ -273,9 +287,7 @@ export function BookDetailScreen({ route, navigation }: Props) {
                 color={Colors.white}
               />
               <Text style={styles.listenNowText}>
-                {isAudioSelected
-                  ? "LISTEN IN MY LIBRARY"
-                  : "READ IN MY LIBRARY"}
+                {isAudioSelected ? "LISTEN NOW" : "READ NOW"}
               </Text>
             </TouchableOpacity>
           ) : (

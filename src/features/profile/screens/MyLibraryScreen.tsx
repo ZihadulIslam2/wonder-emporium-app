@@ -19,6 +19,7 @@ import { libraryApi, bookApi, LibraryItem } from "@/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ProfileStackParamList } from "@/navigation/MainNavigator";
+import { useReaderStore } from "@/store";
 
 type ProfileNav = NativeStackNavigationProp<
   ProfileStackParamList,
@@ -43,6 +44,7 @@ type FilterTab = (typeof FILTER_TABS)[number];
 export function MyLibraryScreen() {
   const navigation = useNavigation<ProfileNav>();
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
+  const progressMap = useReaderStore((state) => state.progressMap);
 
   // Fetch Library items from backend API
   const {
@@ -91,12 +93,20 @@ export function MyLibraryScreen() {
     return [];
   }, [libraryRes]);
 
-  // Format Library items from API response
+  // Format Library items from API response, merging live reader progress
   const libraryBooks: FormattedLibraryBook[] = useMemo(() => {
     return apiLibraryItems.map((item, idx) => {
       const b = item.book;
       const formatType = item.format?.type || "EBOOK";
-      const progressVal = item.progress ?? 0;
+      const bookId = b?.id || `item-${idx}`;
+
+      // Check live local progress from reader store
+      const localProgressData = progressMap[bookId];
+      const progressVal =
+        localProgressData?.progress !== undefined
+          ? localProgressData.progress
+          : (item.progress ?? 0);
+
       const isCompleted = item.status === "COMPLETED" || progressVal >= 100;
       const status = isCompleted
         ? "COMPLETED"
@@ -121,7 +131,7 @@ export function MyLibraryScreen() {
       }
 
       return {
-        id: b?.id || `item-${idx}`,
+        id: bookId,
         orderItemId: item.orderItemId,
         title: b?.title || "Untitled Book",
         author: authorName,
@@ -139,7 +149,7 @@ export function MyLibraryScreen() {
           "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
       };
     });
-  }, [apiLibraryItems]);
+  }, [apiLibraryItems, progressMap]);
 
   // Filter books based on active tab
   const filteredMyBooks = libraryBooks.filter((book) => {
@@ -205,13 +215,35 @@ export function MyLibraryScreen() {
       "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=600",
   }));
 
-  const handleBookPress = (bookId: string, title: string) => {
+  const handlePurchasedBookPress = (book: FormattedLibraryBook) => {
+    if (book.type === "AUDIOBOOK") {
+      navigation.navigate("AudiobookPlayer", {
+        bookId: book.id,
+        orderItemId: book.orderItemId,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.coverUrl,
+        initialProgress: book.progress,
+      });
+    } else {
+      navigation.navigate("PdfReader", {
+        bookId: book.id,
+        orderItemId: book.orderItemId,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.coverUrl,
+        initialProgress: book.progress,
+      });
+    }
+  };
+
+  const handleRecommendedBookPress = (bookId: string, title: string) => {
     navigation.navigate("BookDetail", {
       book: {
         id: bookId,
         title,
         author: "Author",
-        price: "Purchased",
+        price: "$18.99",
         rating: "4.9",
       },
     });
@@ -292,7 +324,7 @@ export function MyLibraryScreen() {
                   <TouchableOpacity
                     key={`${book.id}-${idx}`}
                     style={styles.bookCard}
-                    onPress={() => handleBookPress(book.id, book.title)}
+                    onPress={() => handlePurchasedBookPress(book)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
@@ -301,6 +333,20 @@ export function MyLibraryScreen() {
                         style={styles.coverImage}
                         resizeMode="cover"
                       />
+                      <View style={styles.typeBadge}>
+                        <Ionicons
+                          name={
+                            book.type === "AUDIOBOOK"
+                              ? "headset"
+                              : "book-outline"
+                          }
+                          size={11}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.typeBadgeText}>
+                          {book.type === "AUDIOBOOK" ? "Audio" : "eBook"}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={styles.bookTitle} numberOfLines={1}>
                       {book.title}
@@ -335,7 +381,7 @@ export function MyLibraryScreen() {
                   <TouchableOpacity
                     key={`${book.id}-my-${idx}`}
                     style={styles.bookCard}
-                    onPress={() => handleBookPress(book.id, book.title)}
+                    onPress={() => handlePurchasedBookPress(book)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
@@ -344,6 +390,20 @@ export function MyLibraryScreen() {
                         style={styles.coverImage}
                         resizeMode="cover"
                       />
+                      <View style={styles.typeBadge}>
+                        <Ionicons
+                          name={
+                            book.type === "AUDIOBOOK"
+                              ? "headset"
+                              : "book-outline"
+                          }
+                          size={11}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.typeBadgeText}>
+                          {book.type === "AUDIOBOOK" ? "Audio" : "eBook"}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={styles.bookTitle} numberOfLines={1}>
                       {book.title}
@@ -354,6 +414,7 @@ export function MyLibraryScreen() {
                         style={[
                           styles.progressBarFill,
                           { width: `${Math.min(book.progress, 100)}%` },
+                          book.progress >= 100 && styles.progressBarCompleted,
                         ]}
                       />
                     </View>
@@ -386,7 +447,12 @@ export function MyLibraryScreen() {
               <Text style={styles.sectionTitle}>Recently Opened</Text>
               <View style={styles.recentlyOpenedList}>
                 {recentlyOpened.map((item) => (
-                  <View key={item.id} style={styles.openedCard}>
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.openedCard}
+                    onPress={() => handlePurchasedBookPress(item)}
+                    activeOpacity={0.8}
+                  >
                     <Image
                       source={{ uri: item.coverUrl }}
                       style={styles.openedThumb}
@@ -403,12 +469,14 @@ export function MyLibraryScreen() {
                     </View>
                     <TouchableOpacity
                       style={styles.continueBtn}
-                      onPress={() => handleBookPress(item.id, item.title)}
+                      onPress={() => handlePurchasedBookPress(item)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.continueText}>CONTINUE</Text>
+                      <Text style={styles.continueText}>
+                        {item.type === "AUDIOBOOK" ? "LISTEN" : "READ"}
+                      </Text>
                     </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -426,7 +494,7 @@ export function MyLibraryScreen() {
                   <TouchableOpacity
                     key={b.id}
                     style={styles.bookCard}
-                    onPress={() => handleBookPress(b.id, b.title)}
+                    onPress={() => handleRecommendedBookPress(b.id, b.title)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
@@ -568,10 +636,29 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#EFECE6",
     marginBottom: 8,
+    position: "relative",
   },
   coverImage: {
     width: "100%",
     height: "100%",
+  },
+  typeBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(19, 78, 74, 0.88)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  typeBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
   },
   bookTitle: {
     fontSize: 14,
@@ -613,6 +700,9 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: DARK_GREEN,
     borderRadius: 3,
+  },
+  progressBarCompleted: {
+    backgroundColor: ACCENT_GOLD,
   },
   progressText: {
     fontSize: 11,
