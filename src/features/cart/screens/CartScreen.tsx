@@ -10,8 +10,8 @@ import {
   Image,
   Alert,
   Modal,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView, WebViewNavigation } from "react-native-webview";
 import { Ionicons } from "@expo/vector-icons";
 
