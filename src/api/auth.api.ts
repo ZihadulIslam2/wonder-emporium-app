@@ -41,6 +41,13 @@ export const authApi = {
     bio?: string;
   }) => api.patch("/auth/profile", payload),
 
+  updateAvatar: (formData: FormData) =>
+    api.patch("/auth/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
   changePassword: (payload: { oldPassword: string; newPassword: string }) =>
     api.post("/auth/change-password", payload),
 

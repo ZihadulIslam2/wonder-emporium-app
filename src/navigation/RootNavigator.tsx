@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { useAuthStore, useAppStore, useReaderStore } from "@/store";
 import { authService } from "@/services/auth.service";
@@ -7,7 +6,7 @@ import { authApi } from "@/api";
 import { AuthNavigator } from "./AuthNavigator";
 import { MainNavigator } from "./MainNavigator";
 import { OnboardingScreen } from "@/features/onboarding/screens/OnboardingScreen";
-import { Colors } from "@/styles/colors";
+import { SplashScreen } from "@/features/splash";
 
 export function RootNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -17,6 +16,16 @@ export function RootNavigator() {
   const hasCompletedOnboarding = useAppStore(
     (state) => state.hasCompletedOnboarding,
   );
+
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinSplashElapsed(true);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,12 +76,8 @@ export function RootNavigator() {
     };
   }, [setUser, setLoading]);
 
-  if (isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={Colors.secondary} />
-      </View>
-    );
+  if (isLoading || !minSplashElapsed) {
+    return <SplashScreen />;
   }
 
   return (
@@ -87,12 +92,3 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.white,
-  },
-});

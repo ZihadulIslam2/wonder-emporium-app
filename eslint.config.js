@@ -31,6 +31,7 @@ module.exports = [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
+      "no-undef": "off",
       "unused-imports/no-unused-imports": "warn",
       "no-console": "warn",
     },

@@ -11,7 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -61,14 +63,17 @@ export function AccountInfoScreen() {
   const [bio, setBio] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (profileData) {
-      const p = profileData.userProfile || profileData.profile || {};
-      setFirstName(p.firstName || "");
-      setLastName(p.lastName || "");
-      setLocation(p.location || "");
-      setBio(p.bio || "");
+      const userData =
+        profileData?.data?.data || profileData?.data || profileData;
+      const p = userData?.profile || userData?.userProfile || userData || {};
+      setFirstName(p.firstName || userData?.firstName || "");
+      setLastName(p.lastName || userData?.lastName || "");
+      setLocation(p.location || userData?.location || "");
+      setBio(p.bio || userData?.bio || "");
     }
   }, [profileData]);
 
@@ -98,6 +103,118 @@ export function AccountInfoScreen() {
     },
   });
 
+  const uploadAvatarFile = async (
+    uri: string,
+    mimeType?: string,
+    fileName?: string,
+  ) => {
+    try {
+      setIsUploadingAvatar(true);
+      setErrorMsg("");
+      const formData = new FormData();
+      const name =
+        fileName || uri.split("/").pop() || `avatar_${Date.now()}.jpg`;
+      const match = /\.(\w+)$/.exec(name);
+      const type = mimeType || (match ? `image/${match[1]}` : "image/jpeg");
+
+      if (Platform.OS === "web") {
+        const res = await fetch(uri);
+        const blob = await res.blob();
+        formData.append("avatar", blob, name);
+      } else {
+        formData.append("avatar", {
+          uri,
+          name,
+          type,
+        } as unknown as Blob);
+      }
+
+      await authApi.updateAvatar(formData);
+      setSuccessMsg("Avatar updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      globalThis.setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Failed to upload avatar. Please try again.";
+      setErrorMsg(msg);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handlePickFromLibrary = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access photo library is required to select an avatar.",
+        );
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        await uploadAvatarFile(
+          asset.uri,
+          asset.mimeType,
+          asset.fileName ?? undefined,
+        );
+      }
+    } catch {
+      setErrorMsg("Failed to pick image from library.");
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access camera is required to take a photo.",
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        await uploadAvatarFile(
+          asset.uri,
+          asset.mimeType,
+          asset.fileName ?? undefined,
+        );
+      }
+    } catch {
+      setErrorMsg("Failed to take photo.");
+    }
+  };
+
+  const handlePickAvatar = () => {
+    if (Platform.OS === "web") {
+      handlePickFromLibrary();
+    } else {
+      Alert.alert("Change Profile Picture", "Select a photo source", [
+        { text: "Take Photo", onPress: handleTakePhoto },
+        { text: "Choose from Library", onPress: handlePickFromLibrary },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    }
+  };
+
   const handleSave = () => {
     if (!firstName.trim()) {
       setErrorMsg("First name cannot be empty.");
@@ -112,10 +229,17 @@ export function AccountInfoScreen() {
     });
   };
 
-  const profile = profileData || {};
-  const email = profile.email || "user@example.app";
-  const username = profile.username || "user";
-  const role = profile.role || "READER";
+  const userData =
+    profileData?.data?.data || profileData?.data || profileData || {};
+  const userProfile =
+    userData?.profile || userData?.userProfile || userData || {};
+  const email = userData?.email || profileData?.email || "";
+  const username =
+    userData?.username ||
+    userProfile?.username ||
+    (email ? email.split("@")[0] : "user");
+  const role = userData?.role || profileData?.role || "READER";
+  const avatarUrl = userProfile?.avatarUrl || userData?.avatarUrl || "";
 
   return (
     <ImageBackground
@@ -154,9 +278,36 @@ export function AccountInfoScreen() {
           >
             {/* Header User Card */}
             <View style={styles.headerCard}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={44} color={Colors.secondary} />
-              </View>
+              <TouchableOpacity
+                style={styles.avatarWrapper}
+                onPress={handlePickAvatar}
+                disabled={isUploadingAvatar}
+                activeOpacity={0.8}
+              >
+                <View style={styles.avatar}>
+                  {avatarUrl ? (
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={styles.avatarImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons
+                      name="person"
+                      size={38}
+                      color={Colors.secondary}
+                    />
+                  )}
+                  {isUploadingAvatar && (
+                    <View style={styles.avatarLoadingOverlay}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.cameraIconBadge}>
+                  <Ionicons name="camera" size={13} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
               <View style={styles.headerInfo}>
                 <Text style={styles.headerName}>
                   {firstName || lastName
@@ -401,6 +552,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
+  avatarWrapper: {
+    position: "relative",
+    marginRight: Spacing.md,
+  },
   avatar: {
     width: 68,
     height: 68,
@@ -408,7 +563,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEF3C7",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: Spacing.md,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 34,
+  },
+  avatarLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 34,
+  },
+  cameraIconBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#134E4A",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.white,
   },
   headerInfo: { flex: 1 },
   headerName: { ...Typography.h3, color: Colors.black },

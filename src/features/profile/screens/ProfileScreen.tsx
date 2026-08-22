@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -75,15 +76,22 @@ export function ProfileScreen() {
     },
   });
 
-  const profile = profileData || {
-    userProfile: { firstName: "User", lastName: "" },
-    email: "",
-    username: "user",
-  };
-
-  const name = profile.userProfile?.firstName
-    ? `${profile.userProfile.firstName} ${profile.userProfile.lastName || ""}`.trim()
-    : profile.username || "User";
+  const userData =
+    profileData?.data?.data || profileData?.data || profileData || {};
+  const userProfile =
+    userData?.profile || userData?.userProfile || userData || {};
+  const email = userData?.email || profileData?.email || "";
+  const username =
+    userData?.username ||
+    userProfile?.username ||
+    (email ? email.split("@")[0] : "user");
+  const firstName = userProfile?.firstName || userData?.firstName || "";
+  const lastName = userProfile?.lastName || userData?.lastName || "";
+  const name =
+    firstName || lastName
+      ? `${firstName} ${lastName}`.trim()
+      : username || "User";
+  const avatarUrl = userProfile?.avatarUrl || userData?.avatarUrl || "";
 
   return (
     <ImageBackground
@@ -119,10 +127,21 @@ export function ProfileScreen() {
         >
           <View style={styles.profileSection}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={48} color={Colors.secondary} />
+              {avatarUrl ? (
+                <Image
+                  source={{ uri: avatarUrl }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons name="person" size={48} color={Colors.secondary} />
+              )}
             </View>
             <Text style={styles.name}>{name}</Text>
-            <Text style={styles.email}>{profile.email}</Text>
+            {username && username !== "user" ? (
+              <Text style={styles.username}>@{username}</Text>
+            ) : null}
+            <Text style={styles.email}>{email}</Text>
           </View>
 
           <View style={styles.menu}>
@@ -238,9 +257,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.md,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 44,
   },
   name: { ...Typography.h2, color: Colors.black },
-  email: { ...Typography.body, color: Colors.gray[500], marginTop: 4 },
+  username: {
+    ...Typography.caption,
+    color: "#134E4A",
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  email: { ...Typography.body, color: Colors.gray[500], marginTop: 2 },
 
   menu: { paddingHorizontal: Spacing.lg, gap: Spacing.lg },
   sectionHeading: {
