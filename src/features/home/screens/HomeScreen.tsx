@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -6,9 +7,10 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -20,7 +22,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "@/navigation/MainNavigator";
 import { useQuery } from "@tanstack/react-query";
 import { bookApi } from "@/api";
-import { useState } from "react";
 import { useWishlistStore } from "@/store/wishlist.store";
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList, "HomeScreen">;
@@ -70,7 +71,7 @@ interface FormattedBook {
   [key: string]: unknown;
 }
 
-function BookCard(props: BookCardProps) {
+const BookCard = memo(function BookCard(props: BookCardProps) {
   const {
     id,
     title,
@@ -93,6 +94,14 @@ function BookCard(props: BookCardProps) {
   const isWishlisted = useWishlistStore((state) => state.isInWishlist(id));
   const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
 
+  const handleToggle = useCallback(
+    (e: { stopPropagation?: () => void }) => {
+      e?.stopPropagation?.();
+      toggleWishlist(props as unknown as Parameters<typeof toggleWishlist>[0]);
+    },
+    [props, toggleWishlist],
+  );
+
   return (
     <TouchableOpacity
       style={styles.bookCard}
@@ -101,21 +110,19 @@ function BookCard(props: BookCardProps) {
     >
       <View style={styles.bookCover}>
         {imageUrl ? (
-          <Image
+          <ExpoImage
             source={{ uri: imageUrl }}
             style={styles.bookCoverImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={150}
           />
         ) : (
           <Ionicons name="book" size={32} color={Colors.secondary} />
         )}
         <TouchableOpacity
           style={styles.wishlistBadge}
-          onPress={() =>
-            toggleWishlist(
-              props as unknown as Parameters<typeof toggleWishlist>[0],
-            )
-          }
+          onPress={handleToggle}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -140,7 +147,7 @@ function BookCard(props: BookCardProps) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 function SectionHeader({
   title,
@@ -165,6 +172,14 @@ export function HomeScreen() {
   const navigation = useNavigation<HomeNav>();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -172,14 +187,15 @@ export function HomeScreen() {
       const res = await bookApi.getCategories();
       return res.data;
     },
+    staleTime: 1000 * 60 * 15,
   });
 
   const { data: booksData, isLoading: isBooksLoading } = useQuery({
-    queryKey: ["books", "approved", searchQuery, selectedCategory],
+    queryKey: ["books", "approved", debouncedSearch, selectedCategory],
     queryFn: async () => {
-      const params: Record<string, unknown> = { limit: 10 };
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
+      const params: Record<string, unknown> = { limit: 12 };
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
       }
       if (selectedCategory !== "All") {
         params.category = selectedCategory;
@@ -187,6 +203,7 @@ export function HomeScreen() {
       const res = await bookApi.getApproved(params);
       return res.data;
     },
+    staleTime: 1000 * 60 * 5,
   });
 
   const categories = [
@@ -207,20 +224,32 @@ export function HomeScreen() {
       price: b.formats?.[0]?.listPrice
         ? `$${b.formats[0].listPrice.toFixed(2)}`
         : "Free",
-      rating: "4.8", // Mock rating as API might not provide it
+      rating: "4.8",
     }))
     .filter((b: FormattedBook) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
+      if (!debouncedSearch.trim()) return true;
+      const q = debouncedSearch.toLowerCase();
       return (
         b.title?.toLowerCase().includes(q) ||
         b.author?.toLowerCase().includes(q)
       );
     });
 
-  const handleBookPress = (book: HomeStackParamList["BookDetail"]["book"]) => {
-    navigation.navigate("BookDetail", { book });
-  };
+  const handleBookPress = useCallback(
+    (book: HomeStackParamList["BookDetail"]["book"]) => {
+      navigation.navigate("BookDetail", { book });
+    },
+    [navigation],
+  );
+
+  const renderBookItem = useCallback(
+    ({ item }: { item: FormattedBook }) => (
+      <BookCard {...item} onPress={() => handleBookPress(item)} />
+    ),
+    [handleBookPress],
+  );
+
+  const keyExtractor = useCallback((item: FormattedBook) => item.id, []);
 
   return (
     <ImageBackground
@@ -324,22 +353,21 @@ export function HomeScreen() {
                   })
                 }
               />
-              <ScrollView
+              <FlatList
+                data={featuredBooks}
+                renderItem={renderBookItem}
+                keyExtractor={keyExtractor}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carouselRow}
-              >
-                {featuredBooks.map((book) => (
-                  <BookCard
-                    key={book.id}
-                    {...book}
-                    onPress={() => handleBookPress(book)}
-                  />
-                ))}
-                {featuredBooks.length === 0 && (
+                initialNumToRender={4}
+                maxToRenderPerBatch={4}
+                windowSize={3}
+                removeClippedSubviews
+                ListEmptyComponent={
                   <Text style={styles.emptyText}>No featured books yet.</Text>
-                )}
-              </ScrollView>
+                }
+              />
             </View>
 
             <View style={styles.contentSection}>
@@ -352,25 +380,21 @@ export function HomeScreen() {
                   })
                 }
               />
-              <ScrollView
+              <FlatList
+                data={featuredBooks.filter((b) => b.audiobookAvailable)}
+                renderItem={renderBookItem}
+                keyExtractor={keyExtractor}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carouselRow}
-              >
-                {featuredBooks
-                  .filter((b) => b.audiobookAvailable)
-                  .map((book) => (
-                    <BookCard
-                      key={book.id}
-                      {...book}
-                      onPress={() => handleBookPress(book)}
-                    />
-                  ))}
-                {featuredBooks.filter((b) => b.audiobookAvailable).length ===
-                  0 && (
+                initialNumToRender={4}
+                maxToRenderPerBatch={4}
+                windowSize={3}
+                removeClippedSubviews
+                ListEmptyComponent={
                   <Text style={styles.emptyText}>No audiobooks available.</Text>
-                )}
-              </ScrollView>
+                }
+              />
             </View>
 
             <View style={styles.contentSection}>
@@ -383,24 +407,23 @@ export function HomeScreen() {
                   })
                 }
               />
-              <ScrollView
+              <FlatList
+                data={featuredBooks}
+                renderItem={renderBookItem}
+                keyExtractor={keyExtractor}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carouselRow}
-              >
-                {featuredBooks.map((book) => (
-                  <BookCard
-                    key={book.id}
-                    {...book}
-                    onPress={() => handleBookPress(book)}
-                  />
-                ))}
-                {featuredBooks.length === 0 && (
+                initialNumToRender={4}
+                maxToRenderPerBatch={4}
+                windowSize={3}
+                removeClippedSubviews
+                ListEmptyComponent={
                   <Text style={styles.emptyText}>
                     No recommendations found.
                   </Text>
-                )}
-              </ScrollView>
+                }
+              />
             </View>
           </>
         )}

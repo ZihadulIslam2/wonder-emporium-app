@@ -11,8 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
@@ -286,10 +286,12 @@ export function AccountInfoScreen() {
               >
                 <View style={styles.avatar}>
                   {avatarUrl ? (
-                    <Image
+                    <ExpoImage
                       source={{ uri: avatarUrl }}
                       style={styles.avatarImage}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={150}
                     />
                   ) : (
                     <Ionicons

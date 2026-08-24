@@ -1,13 +1,14 @@
+import React, { useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   FlatList,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -51,6 +52,7 @@ export function BookListScreen({ route, navigation }: Props) {
       const res = await bookApi.getApproved({ limit: 20 });
       return res.data;
     },
+    staleTime: 1000 * 60 * 5,
   });
 
   const rawBooks = booksData?.data?.books || booksData?.books || [];
@@ -87,9 +89,66 @@ export function BookListScreen({ route, navigation }: Props) {
     );
   }
 
-  const handleBookPress = (book: HomeStackParamList["BookDetail"]["book"]) => {
-    navigation.navigate("BookDetail", { book });
-  };
+  const handleBookPress = useCallback(
+    (book: HomeStackParamList["BookDetail"]["book"]) => {
+      navigation.navigate("BookDetail", { book });
+    },
+    [navigation],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof books)[0] }) => {
+      const isWishlisted = wishlistItems.some((w) => w.id === item.id);
+      return (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => handleBookPress(item)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.coverContainer}>
+            {item.coverUrl ? (
+              <ExpoImage
+                source={{ uri: item.coverUrl }}
+                style={styles.coverImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
+              />
+            ) : (
+              <Ionicons name="book" size={40} color={Colors.secondary} />
+            )}
+            <TouchableOpacity
+              style={styles.wishlistBadge}
+              onPress={() => toggleWishlist(item)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isWishlisted ? "heart" : "heart-outline"}
+                size={16}
+                color={isWishlisted ? "#EF4444" : Colors.gray[600]}
+              />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.bookTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.bookAuthor} numberOfLines={1}>
+            {item.author}
+          </Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.priceText}>{item.price}</Text>
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={10} color={Colors.white} />
+              <Text style={styles.ratingText}>{item.rating}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [handleBookPress, toggleWishlist, wishlistItems],
+  );
+
+  const keyExtractor = useCallback((item: { id: string }) => item.id, []);
 
   return (
     <ImageBackground
@@ -116,65 +175,19 @@ export function BookListScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={books}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
           numColumns={2}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.rowWrapper}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={4}
+          removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.emptyText}>No books available.</Text>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => handleBookPress(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.coverContainer}>
-                {item.coverUrl ? (
-                  <Image
-                    source={{ uri: item.coverUrl }}
-                    style={styles.coverImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Ionicons name="book" size={40} color={Colors.secondary} />
-                )}
-                <TouchableOpacity
-                  style={styles.wishlistBadge}
-                  onPress={() => toggleWishlist(item)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={
-                      wishlistItems.some((w) => w.id === item.id)
-                        ? "heart"
-                        : "heart-outline"
-                    }
-                    size={16}
-                    color={
-                      wishlistItems.some((w) => w.id === item.id)
-                        ? "#EF4444"
-                        : Colors.gray[600]
-                    }
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.bookTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.bookAuthor} numberOfLines={1}>
-                {item.author}
-              </Text>
-              <View style={styles.cardFooter}>
-                <Text style={styles.priceText}>{item.price}</Text>
-                <View style={styles.ratingBadge}>
-                  <Ionicons name="star" size={10} color={Colors.white} />
-                  <Text style={styles.ratingText}>{item.rating}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
         />
       )}
     </ImageBackground>

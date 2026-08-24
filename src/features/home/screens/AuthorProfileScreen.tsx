@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -98,10 +98,12 @@ function BookCard(props: BookCardProps) {
     >
       <View style={styles.bookCover}>
         {imageUrl ? (
-          <Image
+          <ExpoImage
             source={{ uri: imageUrl }}
             style={styles.bookCoverImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={150}
           />
         ) : (
           <Ionicons name="book" size={32} color={Colors.secondary} />
@@ -296,10 +298,12 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
         <View style={styles.profileSection}>
           <View style={styles.avatarCard}>
             {avatarUrl ? (
-              <Image
+              <ExpoImage
                 source={{ uri: avatarUrl }}
                 style={styles.avatarImage}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
               />
             ) : (
               <Ionicons name="person" size={64} color={Colors.secondary} />

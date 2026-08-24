@@ -1,22 +1,37 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+// In-memory cache to prevent frequent slow native SecureStore bridge roundtrips
+const memoryCache = new Map<string, string | null>();
+
 export const storage = {
   get: async (key: string): Promise<string | null> => {
+    if (memoryCache.has(key)) {
+      return memoryCache.get(key) ?? null;
+    }
+
     try {
+      let val: string | null = null;
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && window.localStorage) {
-          return window.localStorage.getItem(key);
+          val = window.localStorage.getItem(key);
         }
-        return null;
+      } else {
+        val = await SecureStore.getItemAsync(key);
       }
-      return await SecureStore.getItemAsync(key);
+      memoryCache.set(key, val);
+      return val;
     } catch {
       return null;
     }
   },
 
+  getFast: (key: string): string | null => {
+    return memoryCache.get(key) ?? null;
+  },
+
   set: async (key: string, value: string): Promise<void> => {
+    memoryCache.set(key, value);
     try {
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && window.localStorage) {
@@ -32,6 +47,7 @@ export const storage = {
   },
 
   remove: async (key: string): Promise<void> => {
+    memoryCache.delete(key);
     try {
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && window.localStorage) {
@@ -44,5 +60,9 @@ export const storage = {
       // eslint-disable-next-line no-console
       console.error("Storage remove error:", error);
     }
+  },
+
+  clearCache: (): void => {
+    memoryCache.clear();
   },
 };

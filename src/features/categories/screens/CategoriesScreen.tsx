@@ -74,6 +74,7 @@ export function CategoriesScreen() {
       const response = await bookApi.getCategories();
       return response.data;
     },
+    staleTime: 1000 * 60 * 15,
   });
 
   const categories = data?.categories || [];

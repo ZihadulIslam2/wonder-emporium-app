@@ -1,3 +1,4 @@
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -5,8 +6,8 @@ import {
   ImageBackground,
   TouchableOpacity,
   FlatList,
-  Image,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -22,16 +23,75 @@ export function WishlistScreen() {
     (state) => state.removeFromWishlist,
   );
 
-  const handleBookPress = (item: WishlistItem) => {
-    (
-      navigation as unknown as {
-        navigate: (route: string, params?: unknown) => void;
-      }
-    ).navigate("Home", {
-      screen: "BookDetail",
-      params: { book: item },
-    });
-  };
+  const handleBookPress = useCallback(
+    (item: WishlistItem) => {
+      (
+        navigation as unknown as {
+          navigate: (route: string, params?: unknown) => void;
+        }
+      ).navigate("Home", {
+        screen: "BookDetail",
+        params: { book: item },
+      });
+    },
+    [navigation],
+  );
+
+  const renderWishlistItem = useCallback(
+    ({ item }: { item: WishlistItem }) => {
+      const imageUrl =
+        item.bookCover ||
+        item.coverUrl ||
+        item.cover ||
+        (item.files as Array<{ type: string; url: string }> | undefined)?.find(
+          (f) => f.type === "COVER",
+        )?.url;
+
+      return (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => handleBookPress(item)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.thumbnail}>
+            {imageUrl ? (
+              <ExpoImage
+                source={{ uri: imageUrl }}
+                style={styles.thumbnailImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
+              />
+            ) : (
+              <Ionicons name="book" size={28} color={Colors.secondary} />
+            )}
+          </View>
+          <View style={styles.info}>
+            <Text style={styles.title} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Text style={styles.author} numberOfLines={1}>
+              {item.author}
+            </Text>
+            <View style={styles.ratingRow}>
+              <Ionicons name="star" size={12} color={Colors.secondary} />
+              <Text style={styles.rating}>{item.rating || "4.8"}</Text>
+            </View>
+            <Text style={styles.price}>{item.price || "Free"}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={() => removeFromWishlist(item.id)}
+          >
+            <Ionicons name="heart" size={24} color="#EF4444" />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      );
+    },
+    [handleBookPress, removeFromWishlist],
+  );
+
+  const keyExtractor = useCallback((item: WishlistItem) => item.id, []);
 
   return (
     <ImageBackground
@@ -47,8 +107,13 @@ export function WishlistScreen() {
       </View>
       <FlatList
         data={items}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
+        renderItem={renderWishlistItem}
         contentContainerStyle={styles.list}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="heart-outline" size={64} color={Colors.gray[300]} />
@@ -58,54 +123,6 @@ export function WishlistScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const imageUrl =
-            item.bookCover ||
-            item.coverUrl ||
-            item.cover ||
-            (
-              item.files as Array<{ type: string; url: string }> | undefined
-            )?.find((f) => f.type === "COVER")?.url;
-
-          return (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => handleBookPress(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.thumbnail}>
-                {imageUrl ? (
-                  <Image
-                    source={{ uri: imageUrl }}
-                    style={styles.thumbnailImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Ionicons name="book" size={28} color={Colors.secondary} />
-                )}
-              </View>
-              <View style={styles.info}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.author} numberOfLines={1}>
-                  {item.author}
-                </Text>
-                <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={12} color={Colors.secondary} />
-                  <Text style={styles.rating}>{item.rating || "4.8"}</Text>
-                </View>
-                <Text style={styles.price}>{item.price || "Free"}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.heartBtn}
-                onPress={() => removeFromWishlist(item.id)}
-              >
-                <Ionicons name="heart" size={24} color="#EF4444" />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        }}
       />
     </ImageBackground>
   );

@@ -22,7 +22,7 @@ export function RootNavigator() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setMinSplashElapsed(true);
-    }, 1800);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, []);
@@ -32,11 +32,14 @@ export function RootNavigator() {
 
     async function init() {
       try {
-        useReaderStore
-          .getState()
-          .initProgress()
-          .catch(() => {});
-        const token = await authService.getAccessToken();
+        const [token] = await Promise.all([
+          authService.getAccessToken(),
+          useReaderStore
+            .getState()
+            .initProgress()
+            .catch(() => {}),
+        ]);
+
         if (token) {
           try {
             const profileRes = await authApi.getProfile();

@@ -6,10 +6,10 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -211,10 +211,12 @@ export function BookDetailScreen({ route, navigation }: Props) {
         {/* Book Hero */}
         <View style={styles.heroSection}>
           {coverUrl ? (
-            <Image
+            <ExpoImage
               source={{ uri: coverUrl }}
               style={styles.heroImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           ) : (
             <View style={styles.heroImage}>

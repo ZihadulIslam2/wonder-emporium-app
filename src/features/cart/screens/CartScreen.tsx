@@ -7,10 +7,10 @@ import {
   ImageBackground,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   Alert,
   Modal,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView, WebViewNavigation } from "react-native-webview";
 import { Ionicons } from "@expo/vector-icons";
@@ -374,10 +374,12 @@ export function CartScreen() {
               <View key={item.id} style={styles.cartItem}>
                 <View style={styles.itemThumbnail}>
                   {item.coverUrl ? (
-                    <Image
+                    <ExpoImage
                       source={{ uri: item.coverUrl }}
                       style={styles.itemThumbnailImage}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={150}
                     />
                   ) : (
                     <Ionicons name="book" size={28} color={Colors.secondary} />
@@ -478,10 +480,12 @@ export function CartScreen() {
                   >
                     <View style={styles.authorAvatar}>
                       {author.avatarUrl ? (
-                        <Image
+                        <ExpoImage
                           source={{ uri: author.avatarUrl }}
                           style={styles.authorAvatarImage}
-                          resizeMode="cover"
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          transition={150}
                         />
                       ) : (
                         <Ionicons

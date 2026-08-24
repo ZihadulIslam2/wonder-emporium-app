@@ -6,10 +6,10 @@ import {
   ImageBackground,
   TouchableOpacity,
   ScrollView,
-  Image,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Spacing } from "@/styles/spacing";
@@ -328,10 +328,12 @@ export function MyLibraryScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
-                      <Image
+                      <ExpoImage
                         source={{ uri: book.coverUrl }}
                         style={styles.coverImage}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={150}
                       />
                       <View style={styles.typeBadge}>
                         <Ionicons
@@ -385,10 +387,12 @@ export function MyLibraryScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
-                      <Image
+                      <ExpoImage
                         source={{ uri: book.coverUrl }}
                         style={styles.coverImage}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={150}
                       />
                       <View style={styles.typeBadge}>
                         <Ionicons
@@ -453,10 +457,12 @@ export function MyLibraryScreen() {
                     onPress={() => handlePurchasedBookPress(item)}
                     activeOpacity={0.8}
                   >
-                    <Image
+                    <ExpoImage
                       source={{ uri: item.coverUrl }}
                       style={styles.openedThumb}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={150}
                     />
                     <View style={styles.openedInfo}>
                       <Text style={styles.openedTitle} numberOfLines={1}>
@@ -498,10 +504,12 @@ export function MyLibraryScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.coverWrapper}>
-                      <Image
+                      <ExpoImage
                         source={{ uri: b.coverUrl }}
                         style={styles.coverImage}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={150}
                       />
                     </View>
                     <Text style={styles.bookTitle} numberOfLines={1}>

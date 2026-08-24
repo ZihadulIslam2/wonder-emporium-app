@@ -9,13 +9,22 @@ function generateUUID(): string {
   });
 }
 
+let cachedDeviceId: string | null = null;
+
 export const deviceService = {
   getDeviceId: async (): Promise<string> => {
+    if (cachedDeviceId) {
+      return cachedDeviceId;
+    }
     let deviceId = await storage.get(Constants.deviceIdKey);
     if (!deviceId) {
       deviceId = generateUUID();
       await storage.set(Constants.deviceIdKey, deviceId);
     }
+    cachedDeviceId = deviceId;
     return deviceId;
+  },
+  getDeviceIdSync: (): string | null => {
+    return cachedDeviceId || storage.getFast(Constants.deviceIdKey);
   },
 };

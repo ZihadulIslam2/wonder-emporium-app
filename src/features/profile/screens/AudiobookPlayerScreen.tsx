@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Modal,
   ScrollView,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Spacing } from "@/styles/spacing";
 import bgImage from "@/assets/onboarding/onboarding bg.png";
@@ -357,14 +357,16 @@ export function AudiobookPlayerScreen({ route, navigation }: Props) {
         {/* Cover Art */}
         <View style={styles.coverContainer}>
           <View style={styles.coverWrapper}>
-            <Image
+            <ExpoImage
               source={{
                 uri:
                   coverUrl ||
                   "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600",
               }}
               style={styles.coverImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           </View>
         </View>

@@ -1,13 +1,14 @@
+import React, { useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   FlatList,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -42,6 +43,7 @@ export function AuthorsListScreen({ route, navigation }: Props) {
       const res = await authorApi.getFoundingAuthors({ limit: 20 });
       return res.data;
     },
+    staleTime: 1000 * 60 * 10,
   });
 
   const rawAuthors = authorsData?.data?.authors || authorsData?.authors || [];
@@ -58,6 +60,58 @@ export function AuthorsListScreen({ route, navigation }: Props) {
     rating: "4.9",
     bio: a.profile?.bio || "Founding Author at Wonder Emporium",
   }));
+
+  const handleAuthorPress = useCallback(
+    (item: (typeof authors)[0]) => {
+      navigation.navigate("AuthorProfile", {
+        authorId: item.id,
+        authorName: item.name,
+        authorBio: item.bio,
+        avatarUrl: item.avatarUrl,
+      });
+    },
+    [navigation],
+  );
+
+  const renderAuthorItem = useCallback(
+    ({ item }: { item: (typeof authors)[0] }) => (
+      <TouchableOpacity
+        style={styles.authorCard}
+        onPress={() => handleAuthorPress(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.avatarContainer}>
+          {item.avatarUrl ? (
+            <ExpoImage
+              source={{ uri: item.avatarUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={150}
+            />
+          ) : (
+            <Ionicons name="person" size={32} color={Colors.secondary} />
+          )}
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.authorName}>{item.name}</Text>
+          <Text style={styles.authorBio} numberOfLines={2}>
+            {item.bio}
+          </Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.authorBooks}>{item.books}</Text>
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={12} color={Colors.secondary} />
+              <Text style={styles.ratingText}>{item.rating}</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ),
+    [handleAuthorPress],
+  );
+
+  const keyExtractor = useCallback((item: { id: string }) => item.id, []);
 
   return (
     <ImageBackground
@@ -84,51 +138,17 @@ export function AuthorsListScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={authors}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
+          renderItem={renderAuthorItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={4}
+          removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.emptyText}>No authors found.</Text>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.authorCard}
-              onPress={() =>
-                navigation.navigate("AuthorProfile", {
-                  authorId: item.id,
-                  authorName: item.name,
-                  authorBio: item.bio,
-                  avatarUrl: item.avatarUrl,
-                })
-              }
-              activeOpacity={0.8}
-            >
-              <View style={styles.avatarContainer}>
-                {item.avatarUrl ? (
-                  <Image
-                    source={{ uri: item.avatarUrl }}
-                    style={styles.avatarImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Ionicons name="person" size={32} color={Colors.secondary} />
-                )}
-              </View>
-              <View style={styles.infoContainer}>
-                <Text style={styles.authorName}>{item.name}</Text>
-                <Text style={styles.authorBio} numberOfLines={2}>
-                  {item.bio}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.authorBooks}>{item.books}</Text>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color={Colors.secondary} />
-                    <Text style={styles.ratingText}>{item.rating}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
         />
       )}
     </ImageBackground>

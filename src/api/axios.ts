@@ -31,10 +31,13 @@ function processQueue(error: unknown, token: string | null) {
 
 api.interceptors.request.use(
   async (config) => {
-    const deviceId = await deviceService.getDeviceId();
-    config.headers["x-device"] = deviceId;
-
-    const token = await storage.get(Constants.tokenKey);
+    const [deviceId, token] = await Promise.all([
+      deviceService.getDeviceId(),
+      storage.get(Constants.tokenKey),
+    ]);
+    if (deviceId) {
+      config.headers["x-device"] = deviceId;
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
