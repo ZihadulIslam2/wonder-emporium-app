@@ -2,63 +2,16 @@
 # Documentation: https://docs.codemagic.io/yaml-quick-start/building-a-react-native-app/
 
 workflows:
-  react-native-android:
-    name: Wonder Mobile Android
-    max_build_duration: 120
-    instance_type: mac_mini_m2
-    environment:
-      # If you have uploaded an Android keystore to Codemagic (Team settings > Code signing identities),
-      # specify its reference name below:
-      # android_signing:
-      #   - codemagic_keystore
-      # groups:
-      #   - google_play # If publishing to Google Play with a service account
-      vars:
-        PACKAGE_NAME: "com.zihadul708.wondermobile"
-      node: 22
-    scripts:
-      - name: Install npm dependencies
-        script: |
-          npm install
-      - name: Generate Android project
-        script: |
-          npx expo prebuild --platform android
-      - name: Set Android SDK location
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build Android release
-        script: |
-          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" 2>/dev/null || echo "")
-          if [ -z "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" ]; then
-            UPDATED_BUILD_NUMBER=$BUILD_NUMBER
-          else
-            UPDATED_BUILD_NUMBER=$(($LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
-          fi
-          cd android
-          ./gradlew assembleRelease bundleRelease \
-            -PversionCode=$UPDATED_BUILD_NUMBER \
-            -PversionName=1.0.$UPDATED_BUILD_NUMBER
-    artifacts:
-      - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
-    publishing:
-      email:
-        recipients:
-          - zihadul708@gmail.com
-        notify:
-          success: true
-          failure: true
-
   react-native-ios:
     name: Wonder Mobile iOS
     max_build_duration: 120
     instance_type: mac_mini_m2
-    # integrations:
-    #   app_store_connect: Codemagic # Name of your App Store Connect key in Codemagic Team integrations
+    integrations:
+      app_store_connect: Codemagic # Configure under: Team settings > Developer Portal > Manage keys
     environment:
-      # ios_signing:
-      #   distribution_type: app_store # or: ad_hoc | development
-      #   bundle_identifier: com.zihadul708.wondermobile
+      ios_signing:
+        distribution_type: app_store # or: ad_hoc | development
+        bundle_identifier: com.zihadul708.wondermobile
       vars:
         BUNDLE_ID: "com.zihadul708.wondermobile"
         XCODE_WORKSPACE: "wondermobile.xcworkspace"
@@ -103,6 +56,53 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - zihadul708@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  react-native-android:
+    name: Wonder Mobile Android
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      # If you have uploaded an Android keystore to Codemagic (Team settings > Code signing identities),
+      # specify its reference name below:
+      # android_signing:
+      #   - codemagic_keystore
+      # groups:
+      #   - google_play # If publishing to Google Play with a service account
+      vars:
+        PACKAGE_NAME: "com.zihadul708.wondermobile"
+      node: 22
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Generate Android project
+        script: |
+          npx expo prebuild --platform android
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build Android release
+        script: |
+          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" 2>/dev/null || echo "")
+          if [ -z "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" ]; then
+            UPDATED_BUILD_NUMBER=$BUILD_NUMBER
+          else
+            UPDATED_BUILD_NUMBER=$(($LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
+          fi
+          cd android
+          ./gradlew assembleRelease bundleRelease \
+            -PversionCode=$UPDATED_BUILD_NUMBER \
+            -PversionName=1.0.$UPDATED_BUILD_NUMBER
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
     publishing:
       email:
         recipients:
