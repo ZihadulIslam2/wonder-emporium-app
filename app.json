@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.zihadul708.wondermobile",
+      "bundleIdentifier": "com.zihadul708.wonder",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -23,7 +23,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.zihadul708.wondermobile"
+      "package": "com.zihadul708.wonder"
     },
     "web": {
       "output": "single",
