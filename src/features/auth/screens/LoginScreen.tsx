@@ -39,10 +39,18 @@ export function LoginScreen() {
   useEffect(() => {
     if (loginMutation.isError) {
       const err = loginMutation.error as Error & {
-        response?: { data?: { message?: string }; status?: number };
+        response?: {
+          data?: { message?: string | string[]; error?: string };
+          status?: number;
+        };
         code?: string;
       };
-      const serverMessage = err?.response?.data?.message;
+      const rawMessage = err?.response?.data?.message;
+      const serverMessage = Array.isArray(rawMessage)
+        ? rawMessage.join("\n")
+        : typeof rawMessage === "string"
+          ? rawMessage
+          : err?.response?.data?.error;
 
       let message = "Login failed. Please try again.";
 

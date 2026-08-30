@@ -51,8 +51,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isAuthEndpoint =
+      originalRequest?.url?.includes("/auth/login") ||
+      originalRequest?.url?.includes("/auth/register") ||
+      originalRequest?.url?.includes("/auth/refresh") ||
+      originalRequest?.url?.includes("/auth/verify-email") ||
+      originalRequest?.url?.includes("/auth/forgot-password") ||
+      originalRequest?.url?.includes("/auth/reset-password");
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 ||
+      originalRequest?._retry ||
+      isAuthEndpoint
+    ) {
       return Promise.reject(error);
     }
 
@@ -97,7 +108,7 @@ api.interceptors.response.use(
       processQueue(refreshError, null);
       await storage.remove(Constants.tokenKey);
       await storage.remove(Constants.refreshTokenKey);
-      return Promise.reject(refreshError);
+      return Promise.reject(error);
     } finally {
       isRefreshing = false;
     }
