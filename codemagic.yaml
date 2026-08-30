@@ -17,7 +17,7 @@ workflows:
         XCODE_WORKSPACE: "wondermobile.xcworkspace"
         XCODE_SCHEME: "wondermobile"
         APP_STORE_APPLE_ID: 6806753725
-        EXPO_PUBLIC_API_URL: "http://187.77.187.56:5005/v1"
+        EXPO_PUBLIC_API_URL: "http://2.25.80.41/api/v1"
       node: 22
       xcode: latest
       cocoapods: default
@@ -81,7 +81,7 @@ workflows:
       #   - google_play # If publishing to Google Play with a service account
       vars:
         PACKAGE_NAME: "com.zihadul708.wonder"
-        EXPO_PUBLIC_API_URL: "http://187.77.187.56:5005/v1"
+        EXPO_PUBLIC_API_URL: "http://2.25.80.41/api/v1"
       node: 22
     scripts:
       - name: Install npm dependencies
