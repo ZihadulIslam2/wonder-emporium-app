@@ -16,7 +16,8 @@ workflows:
         BUNDLE_ID: "com.zihadul708.wonder"
         XCODE_WORKSPACE: "wondermobile.xcworkspace"
         XCODE_SCHEME: "wondermobile"
-        # APP_STORE_APPLE_ID: 1555555551 # Optional: replace with your App Store Apple ID once created in App Store Connect
+        APP_STORE_APPLE_ID: 6806753725
+        EXPO_PUBLIC_API_URL: "http://187.77.187.56:5005/v1"
       node: 22
       xcode: latest
       cocoapods: default
@@ -26,7 +27,7 @@ workflows:
           npm install
       - name: Generate iOS project
         script: |
-          npx expo prebuild --platform ios
+          npx expo prebuild --platform ios --clean --no-install
       - name: Install CocoaPods dependencies
         script: |
           cd ios && pod install
@@ -57,6 +58,9 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
       email:
         recipients:
           - zihadul708@gmail.com
@@ -77,6 +81,7 @@ workflows:
       #   - google_play # If publishing to Google Play with a service account
       vars:
         PACKAGE_NAME: "com.zihadul708.wonder"
+        EXPO_PUBLIC_API_URL: "http://187.77.187.56:5005/v1"
       node: 22
     scripts:
       - name: Install npm dependencies
@@ -84,7 +89,7 @@ workflows:
           npm install
       - name: Generate Android project
         script: |
-          npx expo prebuild --platform android
+          npx expo prebuild --platform android --clean --no-install
       - name: Set Android SDK location
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
