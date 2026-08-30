@@ -62,6 +62,16 @@ export const authService = {
     return response.data;
   },
 
+  resendVerification: async (payload: { email: string }) => {
+    const response = await authApi.resendVerification(payload);
+    return response.data;
+  },
+
+  resendPasswordReset: async (payload: { email: string }) => {
+    const response = await authApi.resendPasswordReset(payload);
+    return response.data;
+  },
+
   login: async (payload: LoginDto) => {
     const response = await authApi.login(payload);
     const data = response.data;

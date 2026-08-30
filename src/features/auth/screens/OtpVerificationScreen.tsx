@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Colors } from "@/styles/colors";
 import { Typography } from "@/styles/typography";
@@ -15,6 +16,7 @@ import { AuthButton } from "../components/AuthButton";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/AuthNavigator";
 import { useVerifyEmail } from "../hooks/useVerifyEmail";
+import { useResendCode } from "../hooks/useResendCode";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "OtpVerification">;
 
@@ -23,10 +25,20 @@ const OTP_LENGTH = 6;
 export function OtpVerificationScreen({ route, navigation }: Props) {
   const { email, mode } = route.params;
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const verifyEmailMutation = useVerifyEmail();
+  const resendMutation = useResendCode();
 
   const isVerifyEmail = mode === "verifyEmail";
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   useEffect(() => {
     if (verifyEmailMutation.isSuccess) {
@@ -96,6 +108,39 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
     }
   };
 
+  const handleResend = () => {
+    if (countdown > 0 || resendMutation.isPending) return;
+
+    resendMutation.mutate(
+      { email, isVerifyEmail },
+      {
+        onSuccess: (data) => {
+          setCountdown(60);
+          const responseData = data as {
+            message?: string;
+            data?: { message?: string };
+          };
+          const msg =
+            responseData?.data?.message ||
+            responseData?.message ||
+            "A new verification code has been sent to your email.";
+          Alert.alert("Code Sent", msg);
+        },
+        onError: (err: unknown) => {
+          const errorObj = err as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          };
+          const msg =
+            errorObj?.response?.data?.message ||
+            errorObj?.message ||
+            "Failed to resend code. Please try again.";
+          Alert.alert("Error", msg);
+        },
+      },
+    );
+  };
+
   const isComplete = otp.every((d) => d !== "");
 
   return (
@@ -135,11 +180,27 @@ export function OtpVerificationScreen({ route, navigation }: Props) {
         loading={verifyEmailMutation.isPending}
       />
 
-      {isVerifyEmail && (
-        <TouchableOpacity style={styles.resend} onPress={() => {}}>
-          <Text style={styles.resendText}>Resend Code</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={[
+          styles.resend,
+          (countdown > 0 || resendMutation.isPending) && styles.resendDisabled,
+        ]}
+        onPress={handleResend}
+        disabled={countdown > 0 || resendMutation.isPending}
+      >
+        {resendMutation.isPending ? (
+          <ActivityIndicator size="small" color={Colors.secondary} />
+        ) : (
+          <Text
+            style={[
+              styles.resendText,
+              countdown > 0 && styles.resendTextDisabled,
+            ]}
+          >
+            {countdown > 0 ? `Resend code in ${countdown}s` : "Resend Code"}
+          </Text>
+        )}
+      </TouchableOpacity>
     </AuthLayout>
   );
 }
@@ -186,10 +247,17 @@ const styles = StyleSheet.create({
   resend: {
     alignItems: "center",
     marginTop: Spacing.lg,
+    paddingVertical: Spacing.xs,
+  },
+  resendDisabled: {
+    opacity: 0.7,
   },
   resendText: {
     ...Typography.bodySmall,
     color: Colors.secondary,
     fontWeight: "600",
+  },
+  resendTextDisabled: {
+    color: Colors.gray[500],
   },
 });

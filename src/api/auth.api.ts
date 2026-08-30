@@ -16,6 +16,12 @@ export const authApi = {
   verifyEmail: (payload: VerifyEmailDto) =>
     api.post("/auth/verify-email", payload),
 
+  resendVerification: (payload: { email: string }) =>
+    api.post("/auth/resend-verification", payload),
+
+  resendPasswordReset: (payload: { email: string }) =>
+    api.post("/auth/resend-password-reset", payload),
+
   login: (payload: LoginDto) => api.post("/auth/login", payload),
 
   refreshToken: (payload: RefreshTokenDto) =>
