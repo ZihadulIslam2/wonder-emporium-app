@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -128,6 +128,11 @@ export function BookDetailScreen({ route, navigation }: Props) {
   const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
   const [descExpanded, setDescExpanded] = useState(false);
   const queryClient = useQueryClient();
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  }, [book.id]);
 
   // Dynamic reviews integration
   const { initReviews, addReview, getReviewsForBook } = useReviewStore();
@@ -137,10 +142,7 @@ export function BookDetailScreen({ route, navigation }: Props) {
     initReviews();
   }, [initReviews]);
 
-  const reviews = getReviewsForBook(book.id, {
-    title: book.title,
-    author: book.author,
-  });
+  const reviews = getReviewsForBook(book.id);
 
   const avgRating =
     reviews.length > 0
@@ -214,9 +216,9 @@ export function BookDetailScreen({ route, navigation }: Props) {
   };
 
   const handleAudiobookPress = (audioItem: (typeof popularAudiobooks)[0]) => {
-    navigation.navigate("BookDetail", {
-      book: audioItem,
-    });
+    (
+      navigation as unknown as { push: (name: string, params: unknown) => void }
+    ).push("BookDetail", { book: audioItem });
   };
 
   const coverUrl =
@@ -394,6 +396,7 @@ export function BookDetailScreen({ route, navigation }: Props) {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

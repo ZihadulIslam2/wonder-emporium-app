@@ -18,38 +18,51 @@ interface ReviewStoreState {
     bookId: string,
     review: { reviewerName: string; rating: number; comment: string },
   ) => Promise<void>;
-  getReviewsForBook: (
-    bookId: string,
-    defaultBookInfo?: { title?: string; author?: string },
-  ) => BookReview[];
+  getReviewsForBook: (bookId: string) => BookReview[];
 }
 
 const STORAGE_KEY = "@wonder_book_reviews";
 
-const getContextualSeedReviews = (
-  bookId: string,
-  title?: string,
-  author?: string,
-): BookReview[] => {
-  const displayTitle = title || "this book";
-  const displayAuthor = author || "the author";
+const SEED_REVIEW_POOL: Array<Omit<BookReview, "id" | "bookId">> = [
+  {
+    reviewerName: "Sophia Martinez",
+    rating: 5,
+    comment:
+      "A compelling and deeply captivating read. The storytelling and pacing kept me hooked from the very first chapter. Highly recommend!",
+    createdAt: "2 days ago",
+  },
+  {
+    reviewerName: "James Reynolds",
+    rating: 5,
+    comment:
+      "A beautifully crafted and thought-provoking piece. The narrative flows naturally and stays with you long after the final page.",
+    createdAt: "5 days ago",
+  },
+  {
+    reviewerName: "Elena Vance",
+    rating: 4,
+    comment:
+      "Very well written with insightful depth and great storytelling. Both the text edition and audio narration are top-notch.",
+    createdAt: "1 week ago",
+  },
+];
+
+const getContextualSeedReviews = (bookId: string): BookReview[] => {
+  // Deterministically select 2 natural reviews based on bookId hash
+  const hash = bookId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const firstIdx = hash % SEED_REVIEW_POOL.length;
+  const secondIdx = (firstIdx + 1) % SEED_REVIEW_POOL.length;
 
   return [
     {
+      ...SEED_REVIEW_POOL[firstIdx],
       id: `seed-1-${bookId}`,
       bookId,
-      reviewerName: "Sophia Martinez",
-      rating: 5,
-      comment: `Loved "${displayTitle}"! The perspective and writing style by ${displayAuthor} were deeply engaging throughout. Highly recommend!`,
-      createdAt: "2 days ago",
     },
     {
+      ...SEED_REVIEW_POOL[secondIdx],
       id: `seed-2-${bookId}`,
       bookId,
-      reviewerName: "James Reynolds",
-      rating: 4,
-      comment: `A thought-provoking and well-structured piece. Enjoyed both the digital edition and the audiobook narration.`,
-      createdAt: "1 week ago",
     },
   ];
 };
@@ -97,15 +110,11 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
     }
   },
 
-  getReviewsForBook: (bookId, defaultBookInfo) => {
+  getReviewsForBook: (bookId) => {
     const userReviews = get().reviews[bookId];
     if (userReviews && userReviews.length > 0) {
       return userReviews;
     }
-    return getContextualSeedReviews(
-      bookId,
-      defaultBookInfo?.title,
-      defaultBookInfo?.author,
-    );
+    return getContextualSeedReviews(bookId);
   },
 }));

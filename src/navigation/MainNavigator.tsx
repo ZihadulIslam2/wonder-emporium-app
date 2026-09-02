@@ -17,6 +17,7 @@ import { HelpCenterScreen } from "@/features/profile/screens/HelpCenterScreen";
 import { AboutAppScreen } from "@/features/profile/screens/AboutAppScreen";
 import { AudiobookPlayerScreen } from "@/features/profile/screens/AudiobookPlayerScreen";
 import { PdfReaderScreen } from "@/features/profile/screens/PdfReaderScreen";
+import { ReadingChallengesScreen } from "@/features/profile/screens/ReadingChallengesScreen";
 
 export interface BookReaderParams {
   bookId: string;
@@ -59,6 +60,7 @@ export type HomeStackParamList = {
   };
   AudiobookPlayer: BookReaderParams;
   PdfReader: BookReaderParams;
+  ReadingChallenges: undefined;
 };
 
 export type CartStackParamList = {
@@ -73,6 +75,7 @@ export type CartStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
+  ReadingChallenges: undefined;
   AccountInfoScreen: undefined;
   ChangePasswordScreen: undefined;
   MyLibraryScreen: undefined;
@@ -157,6 +160,11 @@ function HomeNavigator() {
       <HomeStack.Screen
         name="PdfReader"
         component={PdfReaderScreen}
+        options={{ headerShown: false }}
+      />
+      <HomeStack.Screen
+        name="ReadingChallenges"
+        component={ReadingChallengesScreen}
         options={{ headerShown: false }}
       />
     </HomeStack.Navigator>
@@ -295,6 +303,11 @@ function ProfileNavigator() {
       <ProfileStack.Screen
         name="ProfileScreen"
         component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="ReadingChallenges"
+        component={ReadingChallengesScreen}
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen
