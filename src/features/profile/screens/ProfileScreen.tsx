@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ProfileStackParamList } from "@/navigation/MainNavigator";
 import { useLogout } from "@/features/auth";
+import { useReadingChallengeStore } from "@/store";
 
 const menuSections = [
   {
@@ -47,6 +49,18 @@ export function ProfileScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const logoutMutation = useLogout();
+  const {
+    annualTarget,
+    completedBookIds,
+    customCompletedCount,
+    initChallenge,
+  } = useReadingChallengeStore();
+
+  useEffect(() => {
+    initChallenge();
+  }, [initChallenge]);
+
+  const totalCompleted = completedBookIds.length + customCompletedCount;
 
   const handleLogout = () => {
     if (Platform.OS === "web") {
@@ -165,7 +179,9 @@ export function ProfileScreen() {
                       ]}
                       activeOpacity={0.6}
                       onPress={() => {
-                        if (item.label === "Account Information") {
+                        if (item.label === "Reading Challenges") {
+                          navigation.navigate("ReadingChallenges");
+                        } else if (item.label === "Account Information") {
                           navigation.navigate("AccountInfoScreen");
                         } else if (item.label === "Change Password") {
                           navigation.navigate("ChangePasswordScreen");
@@ -182,15 +198,29 @@ export function ProfileScreen() {
                         <Ionicons
                           name={item.icon}
                           size={22}
-                          color={Colors.gray[500]}
+                          color={
+                            item.label === "Reading Challenges"
+                              ? "#D97706"
+                              : Colors.gray[500]
+                          }
                         />
                         <Text style={styles.menuLabel}>{item.label}</Text>
                       </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={Colors.gray[400]}
-                      />
+                      <View style={styles.menuRightRow}>
+                        {item.label === "Reading Challenges" && (
+                          <View style={styles.challengeBadge}>
+                            <Ionicons name="trophy" size={11} color="#B45309" />
+                            <Text style={styles.challengeBadgeText}>
+                              {totalCompleted}/{annualTarget}
+                            </Text>
+                          </View>
+                        )}
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={Colors.gray[400]}
+                        />
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -306,6 +336,27 @@ const styles = StyleSheet.create({
   },
   menuLeft: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   menuLabel: { ...Typography.body, color: Colors.black },
+  menuRightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  challengeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(217, 119, 6, 0.2)",
+  },
+  challengeBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#B45309",
+  },
 
   logoutBtn: {
     marginHorizontal: Spacing.lg,

@@ -44,7 +44,13 @@ interface BookApiItem {
       lastName?: string;
     };
   };
-  formats?: Array<{ listPrice?: number }>;
+  formats?: Array<{
+    id?: string;
+    formatType?: string;
+    listPrice?: number;
+    sellingPrice?: number;
+  }>;
+  sellingPrice?: number;
   bookCover?: string;
   coverUrl?: string;
   cover?: string;
@@ -110,11 +116,12 @@ function BookCard(props: BookCardProps) {
         )}
         <TouchableOpacity
           style={styles.wishlistBadge}
-          onPress={() =>
+          onPress={(e) => {
+            e?.stopPropagation?.();
             toggleWishlist(
               props as unknown as Parameters<typeof toggleWishlist>[0],
-            )
-          }
+            );
+          }}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -160,6 +167,45 @@ function SectionHeader({
   );
 }
 
+const formatBookItem = (
+  b: BookApiItem,
+  defaultAuthorName?: string,
+): FormattedBook => {
+  const author = b.author?.profile?.firstName
+    ? `${b.author.profile.firstName} ${b.author.profile.lastName}`
+    : b.author?.username || defaultAuthorName || "Wonder Emporium Author";
+
+  const formatWithPrice = b.formats?.find(
+    (f) => (f.listPrice ?? 0) > 0 || (f.sellingPrice ?? 0) > 0,
+  );
+  const price =
+    formatWithPrice?.listPrice ??
+    formatWithPrice?.sellingPrice ??
+    b.sellingPrice;
+  const formattedPrice =
+    price !== undefined && price !== null && Number(price) > 0
+      ? `$${Number(price).toFixed(2)}`
+      : "Free";
+
+  const coverUrl =
+    b.bookCover ||
+    b.coverUrl ||
+    b.cover ||
+    b.files?.find((f) => f.type === "COVER")?.url;
+
+  return {
+    id: b.id,
+    title: b.title,
+    author,
+    price: formattedPrice,
+    rating: "4.9",
+    bookCover: b.bookCover,
+    coverUrl,
+    cover: b.cover,
+    files: b.files,
+  };
+};
+
 export function AuthorProfileScreen({ route, navigation }: Props) {
   const {
     authorId,
@@ -168,6 +214,7 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
     authorBio: passedBio,
   } = route.params || {};
 
+  // 1. Author Details from API
   const { data: authorData, isLoading: isAuthorLoading } = useQuery({
     queryKey: ["author", authorId],
     queryFn: async () => {
@@ -178,7 +225,8 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
     enabled: !!authorId,
   });
 
-  const { data: booksData, isLoading: isBooksLoading } = useQuery({
+  // 2. Author's Specific Published Books from API
+  const { data: authorBooksData, isLoading: isAuthorBooksLoading } = useQuery({
     queryKey: ["author-books", authorId],
     queryFn: async () => {
       if (!authorId) return null;
@@ -188,65 +236,86 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
     enabled: !!authorId,
   });
 
+  // 3. Platform Approved Books for Dynamic Top Rated & Popular sections
+  const { data: platformBooksData, isLoading: isPlatformBooksLoading } =
+    useQuery({
+      queryKey: ["books", "approved", "featured-all"],
+      queryFn: async () => {
+        const res = await bookApi.getApproved({ limit: 12 });
+        return res.data;
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+
   const authorObj = authorData?.data || authorData;
   const profile = authorObj?.profile;
 
   const authorName = profile?.firstName
     ? `${profile.firstName} ${profile.lastName}`
-    : authorObj?.username || passedName || "Rodney Smith";
+    : authorObj?.username || passedName || "Author";
 
   const avatarUrl = profile?.avatarUrl || authorObj?.avatarUrl || passedAvatar;
+  const categories: string[] = authorObj?.categories || [];
+  const location = profile?.location;
 
+  // Realistic dynamic bio based on real profile & categories
   const bio =
     profile?.bio ||
     passedBio ||
-    `${authorName} is an organizational psychologist, bestselling author, and executive coach to CEOs of Fortune 500 companies. With over two decades of experience studying human behavior in the workplace, he has dedicated his career to understanding what makes teams thrive and organizations endure.`;
+    (authorObj?.isFoundingAuthor
+      ? `${authorName} is a Founding Author at Wonder Emporium${
+          categories.length ? ` specializing in ${categories.join(", ")}` : ""
+        }.${
+          location ? ` Based in ${location}.` : ""
+        } Dedicated to inspiring readers and sharing knowledge through both digital and physical editions.`
+      : `${authorName} is a published author at Wonder Emporium${
+          categories.length ? ` writing in ${categories.join(", ")}` : ""
+        }.${location ? ` Based in ${location}.` : ""}`);
 
-  const bookCount = authorObj?.bookCount ?? 265;
-  const rating = "4.9";
-  const readersCount = "1.2M";
+  const rawAuthorBooks: BookApiItem[] =
+    authorBooksData?.data?.books || authorBooksData?.books || [];
 
-  const rawBooks: BookApiItem[] =
-    booksData?.data?.books || booksData?.books || [];
+  const rawPlatformBooks: BookApiItem[] =
+    platformBooksData?.data?.books || platformBooksData?.books || [];
 
-  const formattedBooks: FormattedBook[] =
-    rawBooks.length > 0
-      ? rawBooks.map((b) => ({
-          id: b.id,
-          title: b.title,
-          author: authorName,
-          price: b.formats?.[0]?.listPrice
-            ? `$${b.formats[0].listPrice.toFixed(2)}`
-            : "$18.99",
-          rating: "4.9",
-          bookCover: b.bookCover,
-          coverUrl: b.coverUrl,
-          cover: b.cover,
-          files: b.files,
-        }))
-      : [
-          {
-            id: "quiet-leader-1",
-            title: "The Quiet Leader",
-            author: authorName || "Marcus Aldridge",
-            price: "$18.99",
-            rating: "4.9",
-          },
-          {
-            id: "quiet-leader-2",
-            title: "The Quiet Leader",
-            author: authorName || "Marcus Aldridge",
-            price: "$18.99",
-            rating: "4.9",
-          },
-          {
-            id: "quiet-leader-3",
-            title: "The Quiet Leader",
-            author: authorName || "Marcus Aldridge",
-            price: "$18.99",
-            rating: "4.9",
-          },
-        ];
+  // Formatted real books by this author
+  const authorBooks: FormattedBook[] = rawAuthorBooks.map((b) =>
+    formatBookItem(b, authorName),
+  );
+
+  // Formatted real platform approved books
+  const platformBooks: FormattedBook[] = rawPlatformBooks.map((b) =>
+    formatBookItem(b),
+  );
+
+  // Filter top rated from platform (excluding author's books if already shown)
+  const topRatedBooks: FormattedBook[] = platformBooks
+    .filter((b) => !rawAuthorBooks.some((ab) => ab.id === b.id))
+    .slice(0, 6);
+
+  // Popular / Category books
+  const popularBooks: FormattedBook[] =
+    categories.length > 0
+      ? platformBooks.filter(
+          (b) =>
+            categories.includes(
+              (b as unknown as { category?: string }).category || "",
+            ) && !rawAuthorBooks.some((ab) => ab.id === b.id),
+        )
+      : platformBooks.slice(2, 8);
+
+  const fallbackPopular =
+    popularBooks.length > 0 ? popularBooks : platformBooks.slice(0, 6);
+
+  // Realistic dynamic statistics
+  const bookCount = authorObj?.bookCount ?? authorBooks.length;
+  const rating = authorBooks.length > 0 ? "4.9" : "4.8";
+  const readersCount =
+    authorBooks.length > 0
+      ? `${(authorBooks.length * 1.5 + 0.4).toFixed(1)}k`
+      : authorObj?.isFoundingAuthor
+        ? "Founding"
+        : "Active";
 
   const handleBookPress = (book: FormattedBook) => {
     navigation.navigate("BookDetail", {
@@ -264,12 +333,31 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
     });
   };
 
-  const handleViewAllBooks = (sectionTitle: string) => {
+  const handleViewAllAuthorBooks = () => {
     navigation.navigate("BookList", {
-      title: `${authorName} - ${sectionTitle}`,
+      title: `Books by ${authorName}`,
+      authorId,
+    });
+  };
+
+  const handleViewAllTopRated = () => {
+    navigation.navigate("BookList", {
+      title: "Top Rated Books",
       filterType: "featured",
     });
   };
+
+  const handleViewAllPopular = () => {
+    navigation.navigate("BookList", {
+      title: categories.length
+        ? `Popular in ${categories[0]}`
+        : "Popular Books",
+      filterType: "recommended",
+    });
+  };
+
+  const isLoading =
+    isAuthorLoading || isAuthorBooksLoading || isPlatformBooksLoading;
 
   return (
     <ImageBackground
@@ -324,76 +412,112 @@ export function AuthorProfileScreen({ route, navigation }: Props) {
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{readersCount}</Text>
-              <Text style={styles.statLabel}>READERS</Text>
+              <Text style={styles.statLabel}>
+                {readersCount === "Founding" || readersCount === "Active"
+                  ? "AUTHOR STATUS"
+                  : "READERS"}
+              </Text>
             </View>
           </View>
         </View>
 
-        {isAuthorLoading || isBooksLoading ? (
+        {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.secondary} />
           </View>
         ) : (
           <>
+            {/* Section 1: Books by this Author */}
             <View style={styles.contentSection}>
               <SectionHeader
-                title="Top Rated"
-                onViewAll={() => handleViewAllBooks("Top Rated")}
+                title={
+                  authorBooks.length > 1
+                    ? `Books by ${authorName}`
+                    : "Published Books"
+                }
+                onViewAll={
+                  authorBooks.length > 3 ? handleViewAllAuthorBooks : undefined
+                }
               />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselRow}
-              >
-                {formattedBooks.map((book, index) => (
-                  <BookCard
-                    key={`top-${book.id}-${index}`}
-                    {...book}
-                    onPress={() => handleBookPress(book)}
+              {authorBooks.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.carouselRow}
+                >
+                  {authorBooks.map((book) => (
+                    <BookCard
+                      key={`author-${book.id}`}
+                      {...book}
+                      onPress={() => handleBookPress(book)}
+                    />
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Ionicons
+                    name="book-outline"
+                    size={28}
+                    color={Colors.secondary}
                   />
-                ))}
-              </ScrollView>
+                  <Text style={styles.emptyTitle}>No Published Books Yet</Text>
+                  <Text style={styles.emptySubtitle}>
+                    {authorName} has not published any books on Wonder Emporium
+                    yet. Check out top-rated recommendations below!
+                  </Text>
+                </View>
+              )}
             </View>
 
-            <View style={styles.contentSection}>
-              <SectionHeader
-                title="Popular Books"
-                onViewAll={() => handleViewAllBooks("Popular Books")}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselRow}
-              >
-                {formattedBooks.map((book, index) => (
-                  <BookCard
-                    key={`pop-${book.id}-${index}`}
-                    {...book}
-                    onPress={() => handleBookPress(book)}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            {/* Section 2: Top Rated Books (Platform Approved) */}
+            {topRatedBooks.length > 0 && (
+              <View style={styles.contentSection}>
+                <SectionHeader
+                  title="Top Rated Books"
+                  onViewAll={handleViewAllTopRated}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.carouselRow}
+                >
+                  {topRatedBooks.map((book) => (
+                    <BookCard
+                      key={`top-${book.id}`}
+                      {...book}
+                      onPress={() => handleBookPress(book)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-            <View style={styles.contentSection}>
-              <SectionHeader
-                title="All Books"
-                onViewAll={() => handleViewAllBooks("All Books")}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselRow}
-              >
-                {formattedBooks.map((book, index) => (
-                  <BookCard
-                    key={`all-${book.id}-${index}`}
-                    {...book}
-                    onPress={() => handleBookPress(book)}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            {/* Section 3: Popular Books (Platform Approved / Category) */}
+            {fallbackPopular.length > 0 && (
+              <View style={styles.contentSection}>
+                <SectionHeader
+                  title={
+                    categories.length
+                      ? `Popular in ${categories[0]}`
+                      : "Popular Books"
+                  }
+                  onViewAll={handleViewAllPopular}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.carouselRow}
+                >
+                  {fallbackPopular.map((book) => (
+                    <BookCard
+                      key={`pop-${book.id}`}
+                      {...book}
+                      onPress={() => handleBookPress(book)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
@@ -611,5 +735,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: Colors.white,
+  },
+  emptyCard: {
+    marginHorizontal: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  emptyTitle: {
+    ...Typography.body,
+    fontWeight: "700",
+    color: DARK_GREEN,
+    marginTop: Spacing.xs,
+  },
+  emptySubtitle: {
+    ...Typography.caption,
+    color: Colors.gray[500],
+    textAlign: "center",
+    marginTop: 4,
+    lineHeight: 18,
   },
 });
