@@ -46,6 +46,7 @@ export type HomeStackParamList = {
   BookList: {
     title: string;
     filterType?: "featured" | "audiobook" | "recommended";
+    authorId?: string;
   };
   AuthorsList: {
     title: string;
@@ -64,6 +65,10 @@ export type CartStackParamList = {
   CartScreen: undefined;
   AuthorsList: HomeStackParamList["AuthorsList"];
   AuthorProfile: HomeStackParamList["AuthorProfile"];
+  BookDetail: HomeStackParamList["BookDetail"];
+  BookList: HomeStackParamList["BookList"];
+  AudiobookPlayer: BookReaderParams;
+  PdfReader: BookReaderParams;
 };
 
 export type ProfileStackParamList = {
@@ -74,6 +79,28 @@ export type ProfileStackParamList = {
   HelpCenterScreen: undefined;
   AboutAppScreen: undefined;
   BookDetail: HomeStackParamList["BookDetail"];
+  BookList: HomeStackParamList["BookList"];
+  AuthorsList: HomeStackParamList["AuthorsList"];
+  AuthorProfile: HomeStackParamList["AuthorProfile"];
+  AudiobookPlayer: BookReaderParams;
+  PdfReader: BookReaderParams;
+};
+
+export type ExploreStackParamList = {
+  CategoriesScreen: undefined;
+  BookDetail: HomeStackParamList["BookDetail"];
+  BookList: HomeStackParamList["BookList"];
+  AuthorsList: HomeStackParamList["AuthorsList"];
+  AuthorProfile: HomeStackParamList["AuthorProfile"];
+  AudiobookPlayer: BookReaderParams;
+  PdfReader: BookReaderParams;
+};
+
+export type FavoritesStackParamList = {
+  WishlistScreen: undefined;
+  BookDetail: HomeStackParamList["BookDetail"];
+  BookList: HomeStackParamList["BookList"];
+  AuthorsList: HomeStackParamList["AuthorsList"];
   AuthorProfile: HomeStackParamList["AuthorProfile"];
   AudiobookPlayer: BookReaderParams;
   PdfReader: BookReaderParams;
@@ -90,8 +117,8 @@ type MainTabParamList = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const CartStack = createNativeStackNavigator<CartStackParamList>();
-const ExploreStack = createNativeStackNavigator();
-const FavoritesStack = createNativeStackNavigator();
+const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
+const FavoritesStack = createNativeStackNavigator<FavoritesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 function HomeNavigator() {
@@ -154,6 +181,26 @@ function CartNavigator() {
         component={AuthorProfileScreen}
         options={{ headerShown: false }}
       />
+      <CartStack.Screen
+        name="BookDetail"
+        component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <CartStack.Screen
+        name="BookList"
+        component={BookListScreen}
+        options={{ headerShown: false }}
+      />
+      <CartStack.Screen
+        name="AudiobookPlayer"
+        component={AudiobookPlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <CartStack.Screen
+        name="PdfReader"
+        component={PdfReaderScreen}
+        options={{ headerShown: false }}
+      />
     </CartStack.Navigator>
   );
 }
@@ -166,6 +213,36 @@ function ExploreNavigator() {
         component={CategoriesScreen}
         options={{ headerShown: false }}
       />
+      <ExploreStack.Screen
+        name="BookDetail"
+        component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="BookList"
+        component={BookListScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="AuthorsList"
+        component={AuthorsListScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="AuthorProfile"
+        component={AuthorProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="AudiobookPlayer"
+        component={AudiobookPlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="PdfReader"
+        component={PdfReaderScreen}
+        options={{ headerShown: false }}
+      />
     </ExploreStack.Navigator>
   );
 }
@@ -176,6 +253,36 @@ function FavoritesNavigator() {
       <FavoritesStack.Screen
         name="WishlistScreen"
         component={WishlistScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="BookDetail"
+        component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="BookList"
+        component={BookListScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="AuthorsList"
+        component={AuthorsListScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="AuthorProfile"
+        component={AuthorProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="AudiobookPlayer"
+        component={AudiobookPlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <FavoritesStack.Screen
+        name="PdfReader"
+        component={PdfReaderScreen}
         options={{ headerShown: false }}
       />
     </FavoritesStack.Navigator>
@@ -218,6 +325,16 @@ function ProfileNavigator() {
       <ProfileStack.Screen
         name="BookDetail"
         component={BookDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="BookList"
+        component={BookListScreen}
+        options={{ headerShown: false }}
+      />
+      <ProfileStack.Screen
+        name="AuthorsList"
+        component={AuthorsListScreen}
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen
