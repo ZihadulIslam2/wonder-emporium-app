@@ -11,6 +11,7 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "Com.zihadul708.wonder",
       "supportsTablet": true,
+      "deploymentTarget": "15.1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -41,11 +42,15 @@
           "imageWidth": 120
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Wonder Emporium to access your photos to set your profile picture.",
+          "cameraPermission": "Allow Wonder Emporium to access your camera to take a profile picture."
+        }
+      ]
     ],
-    "experiments": {
-      "reactCompiler": true
-    },
     "extra": {
       "eas": {
         "projectId": "680e1446-317f-4861-81e8-5928694b38b0"

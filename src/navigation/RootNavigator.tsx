@@ -6,6 +6,7 @@ import { authApi } from "@/api";
 import { AuthNavigator } from "./AuthNavigator";
 import { MainNavigator } from "./MainNavigator";
 import { OnboardingScreen } from "@/features/onboarding/screens/OnboardingScreen";
+import * as ExpoSplashScreen from "expo-splash-screen";
 import { SplashScreen } from "@/features/splash";
 
 export function RootNavigator() {
@@ -78,6 +79,12 @@ export function RootNavigator() {
       isMounted = false;
     };
   }, [setUser, setLoading]);
+
+  useEffect(() => {
+    if (!isLoading && minSplashElapsed) {
+      void ExpoSplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isLoading, minSplashElapsed]);
 
   if (isLoading || !minSplashElapsed) {
     return <SplashScreen />;

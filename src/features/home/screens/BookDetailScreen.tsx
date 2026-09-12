@@ -127,6 +127,9 @@ export function BookDetailScreen({ route, navigation }: Props) {
   const isWishlisted = useWishlistStore((state) => state.isInWishlist(book.id));
   const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<"cart" | "buy" | null>(
+    null,
+  );
   const queryClient = useQueryClient();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -252,7 +255,11 @@ export function BookDetailScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      Alert.alert("Success", "Book added to cart!");
+      if (loadingAction === "buy") {
+        navigation.getParent()?.navigate("Cart");
+      } else {
+        Alert.alert("Success", "Book added to cart!");
+      }
     },
     onError: (
       error: Error & {
@@ -266,19 +273,19 @@ export function BookDetailScreen({ route, navigation }: Props) {
           : error.message || "Failed to add item to cart.");
       Alert.alert("Error", message);
     },
+    onSettled: () => {
+      setLoadingAction(null);
+    },
   });
 
   const handleAddToCart = () => {
+    setLoadingAction("cart");
     addToCartMutation.mutate();
   };
 
   const handleBuyNow = () => {
-    addToCartMutation.mutate(undefined, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["cart"] });
-        navigation.getParent()?.navigate("Cart");
-      },
-    });
+    setLoadingAction("buy");
+    addToCartMutation.mutate();
   };
 
   const displayPrice = selectedFormatObj?.listPrice
@@ -492,7 +499,7 @@ export function BookDetailScreen({ route, navigation }: Props) {
                 onPress={handleAddToCart}
                 disabled={addToCartMutation.isPending}
               >
-                {addToCartMutation.isPending ? (
+                {addToCartMutation.isPending && loadingAction === "cart" ? (
                   <ActivityIndicator color={Colors.secondary} size="small" />
                 ) : (
                   <Text style={styles.addToCartText}>ADD TO CART</Text>
@@ -503,7 +510,7 @@ export function BookDetailScreen({ route, navigation }: Props) {
                 onPress={handleBuyNow}
                 disabled={addToCartMutation.isPending}
               >
-                {addToCartMutation.isPending ? (
+                {addToCartMutation.isPending && loadingAction === "buy" ? (
                   <ActivityIndicator color={Colors.white} size="small" />
                 ) : (
                   <Text style={styles.buyNowText}>BUY NOW</Text>

@@ -24,6 +24,10 @@ import { cartApi, bookApi, authorApi, ordersApi } from "@/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { CartStackParamList } from "@/navigation/MainNavigator";
+import {
+  RefundDisclosureCard,
+  RefundDisclosureModal,
+} from "../components/RefundDisclosureModal";
 
 type CartNav = NativeStackNavigationProp<CartStackParamList, "CartScreen">;
 
@@ -88,6 +92,7 @@ interface EnrichedCartItem {
 export function CartScreen() {
   const queryClient = useQueryClient();
   const navigation = useNavigation<CartNav>();
+  const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
 
   const { data: cartData, isLoading: isCartLoading } = useQuery({
     queryKey: ["cart"],
@@ -424,6 +429,11 @@ export function CartScreen() {
             </View>
           )}
 
+          <RefundDisclosureCard
+            onPress={() => setIsRefundModalVisible(true)}
+            style={styles.refundCard}
+          />
+
           <TouchableOpacity
             style={[
               styles.checkoutBtn,
@@ -439,6 +449,22 @@ export function CartScreen() {
             ) : (
               <Text style={styles.checkoutText}>Checkout Now</Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setIsRefundModalVisible(true)}
+            activeOpacity={0.7}
+            style={styles.refundTextLink}
+          >
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={13}
+              color={Colors.gray[500]}
+            />
+            <Text style={styles.refundNoticeText}>
+              All sales are final.{" "}
+              <Text style={styles.refundNoticeLink}>Refund Disclosure</Text>
+            </Text>
           </TouchableOpacity>
 
           {/* Meet Future Founding Authors Section */}
@@ -576,6 +602,12 @@ export function CartScreen() {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* Refund Disclosure Modal */}
+      <RefundDisclosureModal
+        visible={isRefundModalVisible}
+        onClose={() => setIsRefundModalVisible(false)}
+      />
     </ImageBackground>
   );
 }
@@ -677,12 +709,15 @@ const styles = StyleSheet.create({
   totalLabel: { ...Typography.h3, color: Colors.black },
   totalValue: { ...Typography.h3, color: Colors.secondary },
 
+  refundCard: {
+    marginTop: Spacing.md,
+  },
   checkoutBtn: {
     backgroundColor: Colors.secondary,
     borderRadius: 28,
     paddingVertical: 16,
     alignItems: "center",
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   disabledBtn: {
     opacity: 0.5,
@@ -691,6 +726,24 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.white,
     fontWeight: "700",
+  },
+  refundTextLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+  },
+  refundNoticeText: {
+    ...Typography.caption,
+    color: Colors.gray[600],
+    textAlign: "center",
+  },
+  refundNoticeLink: {
+    color: Colors.secondary,
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 
   authorsSection: {
