@@ -11,7 +11,7 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "Com.zihadul708.wonder",
       "supportsTablet": true,
-      "deploymentTarget": "15.1",
+      "deploymentTarget": "16.4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
