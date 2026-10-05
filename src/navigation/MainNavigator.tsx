@@ -48,6 +48,7 @@ export type HomeStackParamList = {
     title: string;
     filterType?: "featured" | "audiobook" | "recommended";
     authorId?: string;
+    category?: string;
   };
   AuthorsList: {
     title: string;

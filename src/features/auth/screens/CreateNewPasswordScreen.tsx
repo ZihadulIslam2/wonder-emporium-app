@@ -69,7 +69,7 @@ export function CreateNewPasswordScreen({ route, navigation }: Props) {
               value={value}
               onChangeText={onChange}
               error={errors.password?.message}
-              secureTextEntry
+              isPassword
             />
           )}
         />
@@ -83,7 +83,7 @@ export function CreateNewPasswordScreen({ route, navigation }: Props) {
               value={value}
               onChangeText={onChange}
               error={errors.confirmPassword?.message}
-              secureTextEntry
+              isPassword
             />
           )}
         />

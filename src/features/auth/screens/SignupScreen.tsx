@@ -153,7 +153,7 @@ export function SignupScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               error={errors.password?.message}
-              secureTextEntry
+              isPassword
             />
           )}
         />
@@ -168,7 +168,7 @@ export function SignupScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               error={errors.confirmPassword?.message}
-              secureTextEntry
+              isPassword
             />
           )}
         />
