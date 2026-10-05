@@ -122,7 +122,7 @@ export function LoginScreen() {
               value={value}
               onChangeText={onChange}
               error={errors.password?.message}
-              secureTextEntry
+              isPassword
             />
           )}
         />

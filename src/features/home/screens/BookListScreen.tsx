@@ -42,18 +42,22 @@ interface BookApiItem {
 }
 
 export function BookListScreen({ route, navigation }: Props) {
-  const { title, filterType, authorId } = route.params;
+  const { title, filterType, authorId, category } = route.params;
   const wishlistItems = useWishlistStore((state) => state.items);
   const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
 
   const { data: booksData, isLoading } = useQuery({
-    queryKey: ["books-list", filterType, authorId],
+    queryKey: ["books-list", filterType, authorId, category],
     queryFn: async () => {
       if (authorId) {
         const res = await bookApi.getByAuthor(authorId, { limit: 20 });
         return res.data;
       }
-      const res = await bookApi.getApproved({ limit: 20 });
+      const params: Record<string, unknown> = { limit: 20 };
+      if (category && category !== "All") {
+        params.category = category;
+      }
+      const res = await bookApi.getApproved(params);
       return res.data;
     },
     staleTime: 1000 * 60 * 5,
